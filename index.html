@@ -2,776 +2,1596 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FloodAdapt Multi-Scenario Map</title>
-<style>/* required styles */
-
-.leaflet-pane,
-.leaflet-tile,
-.leaflet-marker-icon,
-.leaflet-marker-shadow,
-.leaflet-tile-container,
-.leaflet-pane > svg,
-.leaflet-pane > canvas,
-.leaflet-zoom-box,
-.leaflet-image-layer,
-.leaflet-layer {
-	position: absolute;
-	left: 0;
-	top: 0;
-	}
-.leaflet-container {
-	overflow: hidden;
-	}
-.leaflet-tile,
-.leaflet-marker-icon,
-.leaflet-marker-shadow {
-	-webkit-user-select: none;
-	   -moz-user-select: none;
-	        user-select: none;
-	  -webkit-user-drag: none;
-	}
-/* Prevents IE11 from highlighting tiles in blue */
-.leaflet-tile::selection {
-	background: transparent;
-}
-/* Safari renders non-retina tile on retina better with this, but Chrome is worse */
-.leaflet-safari .leaflet-tile {
-	image-rendering: -webkit-optimize-contrast;
-	}
-/* hack that prevents hw layers "stretching" when loading new tiles */
-.leaflet-safari .leaflet-tile-container {
-	width: 1600px;
-	height: 1600px;
-	-webkit-transform-origin: 0 0;
-	}
-.leaflet-marker-icon,
-.leaflet-marker-shadow {
-	display: block;
-	}
-/* .leaflet-container svg: reset svg max-width decleration shipped in Joomla! (joomla.org) 3.x */
-/* .leaflet-container img: map is broken in FF if you have max-width: 100% on tiles */
-.leaflet-container .leaflet-overlay-pane svg {
-	max-width: none !important;
-	max-height: none !important;
-	}
-.leaflet-container .leaflet-marker-pane img,
-.leaflet-container .leaflet-shadow-pane img,
-.leaflet-container .leaflet-tile-pane img,
-.leaflet-container img.leaflet-image-layer,
-.leaflet-container .leaflet-tile {
-	max-width: none !important;
-	max-height: none !important;
-	width: auto;
-	padding: 0;
-	}
-
-.leaflet-container img.leaflet-tile {
-	/* See: https://bugs.chromium.org/p/chromium/issues/detail?id=600120 */
-	mix-blend-mode: plus-lighter;
-}
-
-.leaflet-container.leaflet-touch-zoom {
-	-ms-touch-action: pan-x pan-y;
-	touch-action: pan-x pan-y;
-	}
-.leaflet-container.leaflet-touch-drag {
-	-ms-touch-action: pinch-zoom;
-	/* Fallback for FF which doesn't support pinch-zoom */
-	touch-action: none;
-	touch-action: pinch-zoom;
-}
-.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom {
-	-ms-touch-action: none;
-	touch-action: none;
-}
-.leaflet-container {
-	-webkit-tap-highlight-color: transparent;
-}
-.leaflet-container a {
-	-webkit-tap-highlight-color: rgba(51, 181, 229, 0.4);
-}
-.leaflet-tile {
-	filter: inherit;
-	visibility: hidden;
-	}
-.leaflet-tile-loaded {
-	visibility: inherit;
-	}
-.leaflet-zoom-box {
-	width: 0;
-	height: 0;
-	-moz-box-sizing: border-box;
-	     box-sizing: border-box;
-	z-index: 800;
-	}
-/* workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=888319 */
-.leaflet-overlay-pane svg {
-	-moz-user-select: none;
-	}
-
-.leaflet-pane         { z-index: 400; }
-
-.leaflet-tile-pane    { z-index: 200; }
-.leaflet-overlay-pane { z-index: 400; }
-.leaflet-shadow-pane  { z-index: 500; }
-.leaflet-marker-pane  { z-index: 600; }
-.leaflet-tooltip-pane   { z-index: 650; }
-.leaflet-popup-pane   { z-index: 700; }
-
-.leaflet-map-pane canvas { z-index: 100; }
-.leaflet-map-pane svg    { z-index: 200; }
-
-.leaflet-vml-shape {
-	width: 1px;
-	height: 1px;
-	}
-.lvml {
-	behavior: url(#default#VML);
-	display: inline-block;
-	position: absolute;
-	}
-
-
-/* control positioning */
-
-.leaflet-control {
-	position: relative;
-	z-index: 800;
-	pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
-	pointer-events: auto;
-	}
-.leaflet-top,
-.leaflet-bottom {
-	position: absolute;
-	z-index: 1000;
-	pointer-events: none;
-	}
-.leaflet-top {
-	top: 0;
-	}
-.leaflet-right {
-	right: 0;
-	}
-.leaflet-bottom {
-	bottom: 0;
-	}
-.leaflet-left {
-	left: 0;
-	}
-.leaflet-control {
-	float: left;
-	clear: both;
-	}
-.leaflet-right .leaflet-control {
-	float: right;
-	}
-.leaflet-top .leaflet-control {
-	margin-top: 10px;
-	}
-.leaflet-bottom .leaflet-control {
-	margin-bottom: 10px;
-	}
-.leaflet-left .leaflet-control {
-	margin-left: 10px;
-	}
-.leaflet-right .leaflet-control {
-	margin-right: 10px;
-	}
-
-
-/* zoom and fade animations */
-
-.leaflet-fade-anim .leaflet-popup {
-	opacity: 0;
-	-webkit-transition: opacity 0.2s linear;
-	   -moz-transition: opacity 0.2s linear;
-	        transition: opacity 0.2s linear;
-	}
-.leaflet-fade-anim .leaflet-map-pane .leaflet-popup {
-	opacity: 1;
-	}
-.leaflet-zoom-animated {
-	-webkit-transform-origin: 0 0;
-	    -ms-transform-origin: 0 0;
-	        transform-origin: 0 0;
-	}
-svg.leaflet-zoom-animated {
-	will-change: transform;
-}
-
-.leaflet-zoom-anim .leaflet-zoom-animated {
-	-webkit-transition: -webkit-transform 0.25s cubic-bezier(0,0,0.25,1);
-	   -moz-transition:    -moz-transform 0.25s cubic-bezier(0,0,0.25,1);
-	        transition:         transform 0.25s cubic-bezier(0,0,0.25,1);
-	}
-.leaflet-zoom-anim .leaflet-tile,
-.leaflet-pan-anim .leaflet-tile {
-	-webkit-transition: none;
-	   -moz-transition: none;
-	        transition: none;
-	}
-
-.leaflet-zoom-anim .leaflet-zoom-hide {
-	visibility: hidden;
-	}
-
-
-/* cursors */
-
-.leaflet-interactive {
-	cursor: pointer;
-	}
-.leaflet-grab {
-	cursor: -webkit-grab;
-	cursor:    -moz-grab;
-	cursor:         grab;
-	}
-.leaflet-crosshair,
-.leaflet-crosshair .leaflet-interactive {
-	cursor: crosshair;
-	}
-.leaflet-popup-pane,
-.leaflet-control {
-	cursor: auto;
-	}
-.leaflet-dragging .leaflet-grab,
-.leaflet-dragging .leaflet-grab .leaflet-interactive,
-.leaflet-dragging .leaflet-marker-draggable {
-	cursor: move;
-	cursor: -webkit-grabbing;
-	cursor:    -moz-grabbing;
-	cursor:         grabbing;
-	}
-
-/* marker & overlays interactivity */
-.leaflet-marker-icon,
-.leaflet-marker-shadow,
-.leaflet-image-layer,
-.leaflet-pane > svg path,
-.leaflet-tile-container {
-	pointer-events: none;
-	}
-
-.leaflet-marker-icon.leaflet-interactive,
-.leaflet-image-layer.leaflet-interactive,
-.leaflet-pane > svg path.leaflet-interactive,
-svg.leaflet-image-layer.leaflet-interactive path {
-	pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
-	pointer-events: auto;
-	}
-
-/* visual tweaks */
-
-.leaflet-container {
-	background: #ddd;
-	outline-offset: 1px;
-	}
-.leaflet-container a {
-	color: #0078A8;
-	}
-.leaflet-zoom-box {
-	border: 2px dotted #38f;
-	background: rgba(255,255,255,0.5);
-	}
-
-
-/* general typography */
-.leaflet-container {
-	font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
-	font-size: 12px;
-	font-size: 0.75rem;
-	line-height: 1.5;
-	}
-
-
-/* general toolbar styles */
-
-.leaflet-bar {
-	box-shadow: 0 1px 5px rgba(0,0,0,0.65);
-	border-radius: 4px;
-	}
-.leaflet-bar a {
-	background-color: #fff;
-	border-bottom: 1px solid #ccc;
-	width: 26px;
-	height: 26px;
-	line-height: 26px;
-	display: block;
-	text-align: center;
-	text-decoration: none;
-	color: black;
-	}
-.leaflet-bar a,
-.leaflet-control-layers-toggle {
-	background-position: 50% 50%;
-	background-repeat: no-repeat;
-	display: block;
-	}
-.leaflet-bar a:hover,
-.leaflet-bar a:focus {
-	background-color: #f4f4f4;
-	}
-.leaflet-bar a:first-child {
-	border-top-left-radius: 4px;
-	border-top-right-radius: 4px;
-	}
-.leaflet-bar a:last-child {
-	border-bottom-left-radius: 4px;
-	border-bottom-right-radius: 4px;
-	border-bottom: none;
-	}
-.leaflet-bar a.leaflet-disabled {
-	cursor: default;
-	background-color: #f4f4f4;
-	color: #bbb;
-	}
-
-.leaflet-touch .leaflet-bar a {
-	width: 30px;
-	height: 30px;
-	line-height: 30px;
-	}
-.leaflet-touch .leaflet-bar a:first-child {
-	border-top-left-radius: 2px;
-	border-top-right-radius: 2px;
-	}
-.leaflet-touch .leaflet-bar a:last-child {
-	border-bottom-left-radius: 2px;
-	border-bottom-right-radius: 2px;
-	}
-
-/* zoom control */
-
-.leaflet-control-zoom-in,
-.leaflet-control-zoom-out {
-	font: bold 18px 'Lucida Console', Monaco, monospace;
-	text-indent: 1px;
-	}
-
-.leaflet-touch .leaflet-control-zoom-in, .leaflet-touch .leaflet-control-zoom-out  {
-	font-size: 22px;
-	}
-
-
-/* layers control */
-
-.leaflet-control-layers {
-	box-shadow: 0 1px 5px rgba(0,0,0,0.4);
-	background: #fff;
-	border-radius: 5px;
-	}
-.leaflet-control-layers-toggle {
-	background-image: url(images/layers.png);
-	width: 36px;
-	height: 36px;
-	}
-.leaflet-retina .leaflet-control-layers-toggle {
-	background-image: url(images/layers-2x.png);
-	background-size: 26px 26px;
-	}
-.leaflet-touch .leaflet-control-layers-toggle {
-	width: 44px;
-	height: 44px;
-	}
-.leaflet-control-layers .leaflet-control-layers-list,
-.leaflet-control-layers-expanded .leaflet-control-layers-toggle {
-	display: none;
-	}
-.leaflet-control-layers-expanded .leaflet-control-layers-list {
-	display: block;
-	position: relative;
-	}
-.leaflet-control-layers-expanded {
-	padding: 6px 10px 6px 6px;
-	color: #333;
-	background: #fff;
-	}
-.leaflet-control-layers-scrollbar {
-	overflow-y: scroll;
-	overflow-x: hidden;
-	padding-right: 5px;
-	}
-.leaflet-control-layers-selector {
-	margin-top: 2px;
-	position: relative;
-	top: 1px;
-	}
-.leaflet-control-layers label {
-	display: block;
-	font-size: 13px;
-	font-size: 1.08333em;
-	}
-.leaflet-control-layers-separator {
-	height: 0;
-	border-top: 1px solid #ddd;
-	margin: 5px -10px 5px -6px;
-	}
-
-/* Default icon URLs */
-.leaflet-default-icon-path { /* used only in path-guessing heuristic, see L.Icon.Default */
-	background-image: url(images/marker-icon.png);
-	}
-
-
-/* attribution and scale controls */
-
-.leaflet-container .leaflet-control-attribution {
-	background: #fff;
-	background: rgba(255, 255, 255, 0.8);
-	margin: 0;
-	}
-.leaflet-control-attribution,
-.leaflet-control-scale-line {
-	padding: 0 5px;
-	color: #333;
-	line-height: 1.4;
-	}
-.leaflet-control-attribution a {
-	text-decoration: none;
-	}
-.leaflet-control-attribution a:hover,
-.leaflet-control-attribution a:focus {
-	text-decoration: underline;
-	}
-.leaflet-attribution-flag {
-	display: inline !important;
-	vertical-align: baseline !important;
-	width: 1em;
-	height: 0.6669em;
-	}
-.leaflet-left .leaflet-control-scale {
-	margin-left: 5px;
-	}
-.leaflet-bottom .leaflet-control-scale {
-	margin-bottom: 5px;
-	}
-.leaflet-control-scale-line {
-	border: 2px solid #777;
-	border-top: none;
-	line-height: 1.1;
-	padding: 2px 5px 1px;
-	white-space: nowrap;
-	-moz-box-sizing: border-box;
-	     box-sizing: border-box;
-	background: rgba(255, 255, 255, 0.8);
-	text-shadow: 1px 1px #fff;
-	}
-.leaflet-control-scale-line:not(:first-child) {
-	border-top: 2px solid #777;
-	border-bottom: none;
-	margin-top: -2px;
-	}
-.leaflet-control-scale-line:not(:first-child):not(:last-child) {
-	border-bottom: 2px solid #777;
-	}
-
-.leaflet-touch .leaflet-control-attribution,
-.leaflet-touch .leaflet-control-layers,
-.leaflet-touch .leaflet-bar {
-	box-shadow: none;
-	}
-.leaflet-touch .leaflet-control-layers,
-.leaflet-touch .leaflet-bar {
-	border: 2px solid rgba(0,0,0,0.2);
-	background-clip: padding-box;
-	}
-
-
-/* popup */
-
-.leaflet-popup {
-	position: absolute;
-	text-align: center;
-	margin-bottom: 20px;
-	}
-.leaflet-popup-content-wrapper {
-	padding: 1px;
-	text-align: left;
-	border-radius: 12px;
-	}
-.leaflet-popup-content {
-	margin: 13px 24px 13px 20px;
-	line-height: 1.3;
-	font-size: 13px;
-	font-size: 1.08333em;
-	min-height: 1px;
-	}
-.leaflet-popup-content p {
-	margin: 17px 0;
-	margin: 1.3em 0;
-	}
-.leaflet-popup-tip-container {
-	width: 40px;
-	height: 20px;
-	position: absolute;
-	left: 50%;
-	margin-top: -1px;
-	margin-left: -20px;
-	overflow: hidden;
-	pointer-events: none;
-	}
-.leaflet-popup-tip {
-	width: 17px;
-	height: 17px;
-	padding: 1px;
-
-	margin: -10px auto 0;
-	pointer-events: auto;
-
-	-webkit-transform: rotate(45deg);
-	   -moz-transform: rotate(45deg);
-	    -ms-transform: rotate(45deg);
-	        transform: rotate(45deg);
-	}
-.leaflet-popup-content-wrapper,
-.leaflet-popup-tip {
-	background: white;
-	color: #333;
-	box-shadow: 0 3px 14px rgba(0,0,0,0.4);
-	}
-.leaflet-container a.leaflet-popup-close-button {
-	position: absolute;
-	top: 0;
-	right: 0;
-	border: none;
-	text-align: center;
-	width: 24px;
-	height: 24px;
-	font: 16px/24px Tahoma, Verdana, sans-serif;
-	color: #757575;
-	text-decoration: none;
-	background: transparent;
-	}
-.leaflet-container a.leaflet-popup-close-button:hover,
-.leaflet-container a.leaflet-popup-close-button:focus {
-	color: #585858;
-	}
-.leaflet-popup-scrolled {
-	overflow: auto;
-	}
-
-.leaflet-oldie .leaflet-popup-content-wrapper {
-	-ms-zoom: 1;
-	}
-.leaflet-oldie .leaflet-popup-tip {
-	width: 24px;
-	margin: 0 auto;
-
-	-ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678)";
-	filter: progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678);
-	}
-
-.leaflet-oldie .leaflet-control-zoom,
-.leaflet-oldie .leaflet-control-layers,
-.leaflet-oldie .leaflet-popup-content-wrapper,
-.leaflet-oldie .leaflet-popup-tip {
-	border: 1px solid #999;
-	}
-
-
-/* div icon */
-
-.leaflet-div-icon {
-	background: #fff;
-	border: 1px solid #666;
-	}
-
-
-/* Tooltip */
-/* Base styles for the element that has a tooltip */
-.leaflet-tooltip {
-	position: absolute;
-	padding: 6px;
-	background-color: #fff;
-	border: 1px solid #fff;
-	border-radius: 3px;
-	color: #222;
-	white-space: nowrap;
-	-webkit-user-select: none;
-	-moz-user-select: none;
-	-ms-user-select: none;
-	user-select: none;
-	pointer-events: none;
-	box-shadow: 0 1px 3px rgba(0,0,0,0.4);
-	}
-.leaflet-tooltip.leaflet-interactive {
-	cursor: pointer;
-	pointer-events: auto;
-	}
-.leaflet-tooltip-top:before,
-.leaflet-tooltip-bottom:before,
-.leaflet-tooltip-left:before,
-.leaflet-tooltip-right:before {
-	position: absolute;
-	pointer-events: none;
-	border: 6px solid transparent;
-	background: transparent;
-	content: "";
-	}
-
-/* Directions */
-
-.leaflet-tooltip-bottom {
-	margin-top: 6px;
-}
-.leaflet-tooltip-top {
-	margin-top: -6px;
-}
-.leaflet-tooltip-bottom:before,
-.leaflet-tooltip-top:before {
-	left: 50%;
-	margin-left: -6px;
-	}
-.leaflet-tooltip-top:before {
-	bottom: 0;
-	margin-bottom: -12px;
-	border-top-color: #fff;
-	}
-.leaflet-tooltip-bottom:before {
-	top: 0;
-	margin-top: -12px;
-	margin-left: -6px;
-	border-bottom-color: #fff;
-	}
-.leaflet-tooltip-left {
-	margin-left: -6px;
-}
-.leaflet-tooltip-right {
-	margin-left: 6px;
-}
-.leaflet-tooltip-left:before,
-.leaflet-tooltip-right:before {
-	top: 50%;
-	margin-top: -6px;
-	}
-.leaflet-tooltip-left:before {
-	right: 0;
-	margin-right: -12px;
-	border-left-color: #fff;
-	}
-.leaflet-tooltip-right:before {
-	left: 0;
-	margin-left: -12px;
-	border-right-color: #fff;
-	}
-
-/* Printing */
-
-@media print {
-	/* Prevent printers from removing background-images of controls. */
-	.leaflet-control {
-		-webkit-print-color-adjust: exact;
-		print-color-adjust: exact;
-		}
-	}
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>FloodAdapt Scenario Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>/* required styles */
+
+
+
+.leaflet-pane,
+
+.leaflet-tile,
+
+.leaflet-marker-icon,
+
+.leaflet-marker-shadow,
+
+.leaflet-tile-container,
+
+.leaflet-pane > svg,
+
+.leaflet-pane > canvas,
+
+.leaflet-zoom-box,
+
+.leaflet-image-layer,
+
+.leaflet-layer {
+
+	position: absolute;
+
+	left: 0;
+
+	top: 0;
+
+	}
+
+.leaflet-container {
+
+	overflow: hidden;
+
+	}
+
+.leaflet-tile,
+
+.leaflet-marker-icon,
+
+.leaflet-marker-shadow {
+
+	-webkit-user-select: none;
+
+	   -moz-user-select: none;
+
+	        user-select: none;
+
+	  -webkit-user-drag: none;
+
+	}
+
+/* Prevents IE11 from highlighting tiles in blue */
+
+.leaflet-tile::selection {
+
+	background: transparent;
+
+}
+
+/* Safari renders non-retina tile on retina better with this, but Chrome is worse */
+
+.leaflet-safari .leaflet-tile {
+
+	image-rendering: -webkit-optimize-contrast;
+
+	}
+
+/* hack that prevents hw layers "stretching" when loading new tiles */
+
+.leaflet-safari .leaflet-tile-container {
+
+	width: 1600px;
+
+	height: 1600px;
+
+	-webkit-transform-origin: 0 0;
+
+	}
+
+.leaflet-marker-icon,
+
+.leaflet-marker-shadow {
+
+	display: block;
+
+	}
+
+/* .leaflet-container svg: reset svg max-width decleration shipped in Joomla! (joomla.org) 3.x */
+
+/* .leaflet-container img: map is broken in FF if you have max-width: 100% on tiles */
+
+.leaflet-container .leaflet-overlay-pane svg {
+
+	max-width: none !important;
+
+	max-height: none !important;
+
+	}
+
+.leaflet-container .leaflet-marker-pane img,
+
+.leaflet-container .leaflet-shadow-pane img,
+
+.leaflet-container .leaflet-tile-pane img,
+
+.leaflet-container img.leaflet-image-layer,
+
+.leaflet-container .leaflet-tile {
+
+	max-width: none !important;
+
+	max-height: none !important;
+
+	width: auto;
+
+	padding: 0;
+
+	}
+
+
+
+.leaflet-container img.leaflet-tile {
+
+	/* See: https://bugs.chromium.org/p/chromium/issues/detail?id=600120 */
+
+	mix-blend-mode: plus-lighter;
+
+}
+
+
+
+.leaflet-container.leaflet-touch-zoom {
+
+	-ms-touch-action: pan-x pan-y;
+
+	touch-action: pan-x pan-y;
+
+	}
+
+.leaflet-container.leaflet-touch-drag {
+
+	-ms-touch-action: pinch-zoom;
+
+	/* Fallback for FF which doesn't support pinch-zoom */
+
+	touch-action: none;
+
+	touch-action: pinch-zoom;
+
+}
+
+.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom {
+
+	-ms-touch-action: none;
+
+	touch-action: none;
+
+}
+
+.leaflet-container {
+
+	-webkit-tap-highlight-color: transparent;
+
+}
+
+.leaflet-container a {
+
+	-webkit-tap-highlight-color: rgba(51, 181, 229, 0.4);
+
+}
+
+.leaflet-tile {
+
+	filter: inherit;
+
+	visibility: hidden;
+
+	}
+
+.leaflet-tile-loaded {
+
+	visibility: inherit;
+
+	}
+
+.leaflet-zoom-box {
+
+	width: 0;
+
+	height: 0;
+
+	-moz-box-sizing: border-box;
+
+	     box-sizing: border-box;
+
+	z-index: 800;
+
+	}
+
+/* workaround for https://bugzilla.mozilla.org/show_bug.cgi?id=888319 */
+
+.leaflet-overlay-pane svg {
+
+	-moz-user-select: none;
+
+	}
+
+
+
+.leaflet-pane         { z-index: 400; }
+
+
+
+.leaflet-tile-pane    { z-index: 200; }
+
+.leaflet-overlay-pane { z-index: 400; }
+
+.leaflet-shadow-pane  { z-index: 500; }
+
+.leaflet-marker-pane  { z-index: 600; }
+
+.leaflet-tooltip-pane   { z-index: 650; }
+
+.leaflet-popup-pane   { z-index: 700; }
+
+
+
+.leaflet-map-pane canvas { z-index: 100; }
+
+.leaflet-map-pane svg    { z-index: 200; }
+
+
+
+.leaflet-vml-shape {
+
+	width: 1px;
+
+	height: 1px;
+
+	}
+
+.lvml {
+
+	behavior: url(#default#VML);
+
+	display: inline-block;
+
+	position: absolute;
+
+	}
+
+
+
+
+
+/* control positioning */
+
+
+
+.leaflet-control {
+
+	position: relative;
+
+	z-index: 800;
+
+	pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
+
+	pointer-events: auto;
+
+	}
+
+.leaflet-top,
+
+.leaflet-bottom {
+
+	position: absolute;
+
+	z-index: 1000;
+
+	pointer-events: none;
+
+	}
+
+.leaflet-top {
+
+	top: 0;
+
+	}
+
+.leaflet-right {
+
+	right: 0;
+
+	}
+
+.leaflet-bottom {
+
+	bottom: 0;
+
+	}
+
+.leaflet-left {
+
+	left: 0;
+
+	}
+
+.leaflet-control {
+
+	float: left;
+
+	clear: both;
+
+	}
+
+.leaflet-right .leaflet-control {
+
+	float: right;
+
+	}
+
+.leaflet-top .leaflet-control {
+
+	margin-top: 10px;
+
+	}
+
+.leaflet-bottom .leaflet-control {
+
+	margin-bottom: 10px;
+
+	}
+
+.leaflet-left .leaflet-control {
+
+	margin-left: 10px;
+
+	}
+
+.leaflet-right .leaflet-control {
+
+	margin-right: 10px;
+
+	}
+
+
+
+
+
+/* zoom and fade animations */
+
+
+
+.leaflet-fade-anim .leaflet-popup {
+
+	opacity: 0;
+
+	-webkit-transition: opacity 0.2s linear;
+
+	   -moz-transition: opacity 0.2s linear;
+
+	        transition: opacity 0.2s linear;
+
+	}
+
+.leaflet-fade-anim .leaflet-map-pane .leaflet-popup {
+
+	opacity: 1;
+
+	}
+
+.leaflet-zoom-animated {
+
+	-webkit-transform-origin: 0 0;
+
+	    -ms-transform-origin: 0 0;
+
+	        transform-origin: 0 0;
+
+	}
+
+svg.leaflet-zoom-animated {
+
+	will-change: transform;
+
+}
+
+
+
+.leaflet-zoom-anim .leaflet-zoom-animated {
+
+	-webkit-transition: -webkit-transform 0.25s cubic-bezier(0,0,0.25,1);
+
+	   -moz-transition:    -moz-transform 0.25s cubic-bezier(0,0,0.25,1);
+
+	        transition:         transform 0.25s cubic-bezier(0,0,0.25,1);
+
+	}
+
+.leaflet-zoom-anim .leaflet-tile,
+
+.leaflet-pan-anim .leaflet-tile {
+
+	-webkit-transition: none;
+
+	   -moz-transition: none;
+
+	        transition: none;
+
+	}
+
+
+
+.leaflet-zoom-anim .leaflet-zoom-hide {
+
+	visibility: hidden;
+
+	}
+
+
+
+
+
+/* cursors */
+
+
+
+.leaflet-interactive {
+
+	cursor: pointer;
+
+	}
+
+.leaflet-grab {
+
+	cursor: -webkit-grab;
+
+	cursor:    -moz-grab;
+
+	cursor:         grab;
+
+	}
+
+.leaflet-crosshair,
+
+.leaflet-crosshair .leaflet-interactive {
+
+	cursor: crosshair;
+
+	}
+
+.leaflet-popup-pane,
+
+.leaflet-control {
+
+	cursor: auto;
+
+	}
+
+.leaflet-dragging .leaflet-grab,
+
+.leaflet-dragging .leaflet-grab .leaflet-interactive,
+
+.leaflet-dragging .leaflet-marker-draggable {
+
+	cursor: move;
+
+	cursor: -webkit-grabbing;
+
+	cursor:    -moz-grabbing;
+
+	cursor:         grabbing;
+
+	}
+
+
+
+/* marker & overlays interactivity */
+
+.leaflet-marker-icon,
+
+.leaflet-marker-shadow,
+
+.leaflet-image-layer,
+
+.leaflet-pane > svg path,
+
+.leaflet-tile-container {
+
+	pointer-events: none;
+
+	}
+
+
+
+.leaflet-marker-icon.leaflet-interactive,
+
+.leaflet-image-layer.leaflet-interactive,
+
+.leaflet-pane > svg path.leaflet-interactive,
+
+svg.leaflet-image-layer.leaflet-interactive path {
+
+	pointer-events: visiblePainted; /* IE 9-10 doesn't have auto */
+
+	pointer-events: auto;
+
+	}
+
+
+
+/* visual tweaks */
+
+
+
+.leaflet-container {
+
+	background: #ddd;
+
+	outline-offset: 1px;
+
+	}
+
+.leaflet-container a {
+
+	color: #0078A8;
+
+	}
+
+.leaflet-zoom-box {
+
+	border: 2px dotted #38f;
+
+	background: rgba(255,255,255,0.5);
+
+	}
+
+
+
+
+
+/* general typography */
+
+.leaflet-container {
+
+	font-family: "Helvetica Neue", Arial, Helvetica, sans-serif;
+
+	font-size: 12px;
+
+	font-size: 0.75rem;
+
+	line-height: 1.5;
+
+	}
+
+
+
+
+
+/* general toolbar styles */
+
+
+
+.leaflet-bar {
+
+	box-shadow: 0 1px 5px rgba(0,0,0,0.65);
+
+	border-radius: 4px;
+
+	}
+
+.leaflet-bar a {
+
+	background-color: #fff;
+
+	border-bottom: 1px solid #ccc;
+
+	width: 26px;
+
+	height: 26px;
+
+	line-height: 26px;
+
+	display: block;
+
+	text-align: center;
+
+	text-decoration: none;
+
+	color: black;
+
+	}
+
+.leaflet-bar a,
+
+.leaflet-control-layers-toggle {
+
+	background-position: 50% 50%;
+
+	background-repeat: no-repeat;
+
+	display: block;
+
+	}
+
+.leaflet-bar a:hover,
+
+.leaflet-bar a:focus {
+
+	background-color: #f4f4f4;
+
+	}
+
+.leaflet-bar a:first-child {
+
+	border-top-left-radius: 4px;
+
+	border-top-right-radius: 4px;
+
+	}
+
+.leaflet-bar a:last-child {
+
+	border-bottom-left-radius: 4px;
+
+	border-bottom-right-radius: 4px;
+
+	border-bottom: none;
+
+	}
+
+.leaflet-bar a.leaflet-disabled {
+
+	cursor: default;
+
+	background-color: #f4f4f4;
+
+	color: #bbb;
+
+	}
+
+
+
+.leaflet-touch .leaflet-bar a {
+
+	width: 30px;
+
+	height: 30px;
+
+	line-height: 30px;
+
+	}
+
+.leaflet-touch .leaflet-bar a:first-child {
+
+	border-top-left-radius: 2px;
+
+	border-top-right-radius: 2px;
+
+	}
+
+.leaflet-touch .leaflet-bar a:last-child {
+
+	border-bottom-left-radius: 2px;
+
+	border-bottom-right-radius: 2px;
+
+	}
+
+
+
+/* zoom control */
+
+
+
+.leaflet-control-zoom-in,
+
+.leaflet-control-zoom-out {
+
+	font: bold 18px 'Lucida Console', Monaco, monospace;
+
+	text-indent: 1px;
+
+	}
+
+
+
+.leaflet-touch .leaflet-control-zoom-in, .leaflet-touch .leaflet-control-zoom-out  {
+
+	font-size: 22px;
+
+	}
+
+
+
+
+
+/* layers control */
+
+
+
+.leaflet-control-layers {
+
+	box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+
+	background: #fff;
+
+	border-radius: 5px;
+
+	}
+
+.leaflet-control-layers-toggle {
+
+	background-image: url(images/layers.png);
+
+	width: 36px;
+
+	height: 36px;
+
+	}
+
+.leaflet-retina .leaflet-control-layers-toggle {
+
+	background-image: url(images/layers-2x.png);
+
+	background-size: 26px 26px;
+
+	}
+
+.leaflet-touch .leaflet-control-layers-toggle {
+
+	width: 44px;
+
+	height: 44px;
+
+	}
+
+.leaflet-control-layers .leaflet-control-layers-list,
+
+.leaflet-control-layers-expanded .leaflet-control-layers-toggle {
+
+	display: none;
+
+	}
+
+.leaflet-control-layers-expanded .leaflet-control-layers-list {
+
+	display: block;
+
+	position: relative;
+
+	}
+
+.leaflet-control-layers-expanded {
+
+	padding: 6px 10px 6px 6px;
+
+	color: #333;
+
+	background: #fff;
+
+	}
+
+.leaflet-control-layers-scrollbar {
+
+	overflow-y: scroll;
+
+	overflow-x: hidden;
+
+	padding-right: 5px;
+
+	}
+
+.leaflet-control-layers-selector {
+
+	margin-top: 2px;
+
+	position: relative;
+
+	top: 1px;
+
+	}
+
+.leaflet-control-layers label {
+
+	display: block;
+
+	font-size: 13px;
+
+	font-size: 1.08333em;
+
+	}
+
+.leaflet-control-layers-separator {
+
+	height: 0;
+
+	border-top: 1px solid #ddd;
+
+	margin: 5px -10px 5px -6px;
+
+	}
+
+
+
+/* Default icon URLs */
+
+.leaflet-default-icon-path { /* used only in path-guessing heuristic, see L.Icon.Default */
+
+	background-image: url(images/marker-icon.png);
+
+	}
+
+
+
+
+
+/* attribution and scale controls */
+
+
+
+.leaflet-container .leaflet-control-attribution {
+
+	background: #fff;
+
+	background: rgba(255, 255, 255, 0.8);
+
+	margin: 0;
+
+	}
+
+.leaflet-control-attribution,
+
+.leaflet-control-scale-line {
+
+	padding: 0 5px;
+
+	color: #333;
+
+	line-height: 1.4;
+
+	}
+
+.leaflet-control-attribution a {
+
+	text-decoration: none;
+
+	}
+
+.leaflet-control-attribution a:hover,
+
+.leaflet-control-attribution a:focus {
+
+	text-decoration: underline;
+
+	}
+
+.leaflet-attribution-flag {
+
+	display: inline !important;
+
+	vertical-align: baseline !important;
+
+	width: 1em;
+
+	height: 0.6669em;
+
+	}
+
+.leaflet-left .leaflet-control-scale {
+
+	margin-left: 5px;
+
+	}
+
+.leaflet-bottom .leaflet-control-scale {
+
+	margin-bottom: 5px;
+
+	}
+
+.leaflet-control-scale-line {
+
+	border: 2px solid #777;
+
+	border-top: none;
+
+	line-height: 1.1;
+
+	padding: 2px 5px 1px;
+
+	white-space: nowrap;
+
+	-moz-box-sizing: border-box;
+
+	     box-sizing: border-box;
+
+	background: rgba(255, 255, 255, 0.8);
+
+	text-shadow: 1px 1px #fff;
+
+	}
+
+.leaflet-control-scale-line:not(:first-child) {
+
+	border-top: 2px solid #777;
+
+	border-bottom: none;
+
+	margin-top: -2px;
+
+	}
+
+.leaflet-control-scale-line:not(:first-child):not(:last-child) {
+
+	border-bottom: 2px solid #777;
+
+	}
+
+
+
+.leaflet-touch .leaflet-control-attribution,
+
+.leaflet-touch .leaflet-control-layers,
+
+.leaflet-touch .leaflet-bar {
+
+	box-shadow: none;
+
+	}
+
+.leaflet-touch .leaflet-control-layers,
+
+.leaflet-touch .leaflet-bar {
+
+	border: 2px solid rgba(0,0,0,0.2);
+
+	background-clip: padding-box;
+
+	}
+
+
+
+
+
+/* popup */
+
+
+
+.leaflet-popup {
+
+	position: absolute;
+
+	text-align: center;
+
+	margin-bottom: 20px;
+
+	}
+
+.leaflet-popup-content-wrapper {
+
+	padding: 1px;
+
+	text-align: left;
+
+	border-radius: 12px;
+
+	}
+
+.leaflet-popup-content {
+
+	margin: 13px 24px 13px 20px;
+
+	line-height: 1.3;
+
+	font-size: 13px;
+
+	font-size: 1.08333em;
+
+	min-height: 1px;
+
+	}
+
+.leaflet-popup-content p {
+
+	margin: 17px 0;
+
+	margin: 1.3em 0;
+
+	}
+
+.leaflet-popup-tip-container {
+
+	width: 40px;
+
+	height: 20px;
+
+	position: absolute;
+
+	left: 50%;
+
+	margin-top: -1px;
+
+	margin-left: -20px;
+
+	overflow: hidden;
+
+	pointer-events: none;
+
+	}
+
+.leaflet-popup-tip {
+
+	width: 17px;
+
+	height: 17px;
+
+	padding: 1px;
+
+
+
+	margin: -10px auto 0;
+
+	pointer-events: auto;
+
+
+
+	-webkit-transform: rotate(45deg);
+
+	   -moz-transform: rotate(45deg);
+
+	    -ms-transform: rotate(45deg);
+
+	        transform: rotate(45deg);
+
+	}
+
+.leaflet-popup-content-wrapper,
+
+.leaflet-popup-tip {
+
+	background: white;
+
+	color: #333;
+
+	box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+
+	}
+
+.leaflet-container a.leaflet-popup-close-button {
+
+	position: absolute;
+
+	top: 0;
+
+	right: 0;
+
+	border: none;
+
+	text-align: center;
+
+	width: 24px;
+
+	height: 24px;
+
+	font: 16px/24px Tahoma, Verdana, sans-serif;
+
+	color: #757575;
+
+	text-decoration: none;
+
+	background: transparent;
+
+	}
+
+.leaflet-container a.leaflet-popup-close-button:hover,
+
+.leaflet-container a.leaflet-popup-close-button:focus {
+
+	color: #585858;
+
+	}
+
+.leaflet-popup-scrolled {
+
+	overflow: auto;
+
+	}
+
+
+
+.leaflet-oldie .leaflet-popup-content-wrapper {
+
+	-ms-zoom: 1;
+
+	}
+
+.leaflet-oldie .leaflet-popup-tip {
+
+	width: 24px;
+
+	margin: 0 auto;
+
+
+
+	-ms-filter: "progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678)";
+
+	filter: progid:DXImageTransform.Microsoft.Matrix(M11=0.70710678, M12=0.70710678, M21=-0.70710678, M22=0.70710678);
+
+	}
+
+
+
+.leaflet-oldie .leaflet-control-zoom,
+
+.leaflet-oldie .leaflet-control-layers,
+
+.leaflet-oldie .leaflet-popup-content-wrapper,
+
+.leaflet-oldie .leaflet-popup-tip {
+
+	border: 1px solid #999;
+
+	}
+
+
+
+
+
+/* div icon */
+
+
+
+.leaflet-div-icon {
+
+	background: #fff;
+
+	border: 1px solid #666;
+
+	}
+
+
+
+
+
+/* Tooltip */
+
+/* Base styles for the element that has a tooltip */
+
+.leaflet-tooltip {
+
+	position: absolute;
+
+	padding: 6px;
+
+	background-color: #fff;
+
+	border: 1px solid #fff;
+
+	border-radius: 3px;
+
+	color: #222;
+
+	white-space: nowrap;
+
+	-webkit-user-select: none;
+
+	-moz-user-select: none;
+
+	-ms-user-select: none;
+
+	user-select: none;
+
+	pointer-events: none;
+
+	box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+
+	}
+
+.leaflet-tooltip.leaflet-interactive {
+
+	cursor: pointer;
+
+	pointer-events: auto;
+
+	}
+
+.leaflet-tooltip-top:before,
+
+.leaflet-tooltip-bottom:before,
+
+.leaflet-tooltip-left:before,
+
+.leaflet-tooltip-right:before {
+
+	position: absolute;
+
+	pointer-events: none;
+
+	border: 6px solid transparent;
+
+	background: transparent;
+
+	content: "";
+
+	}
+
+
+
+/* Directions */
+
+
+
+.leaflet-tooltip-bottom {
+
+	margin-top: 6px;
+
+}
+
+.leaflet-tooltip-top {
+
+	margin-top: -6px;
+
+}
+
+.leaflet-tooltip-bottom:before,
+
+.leaflet-tooltip-top:before {
+
+	left: 50%;
+
+	margin-left: -6px;
+
+	}
+
+.leaflet-tooltip-top:before {
+
+	bottom: 0;
+
+	margin-bottom: -12px;
+
+	border-top-color: #fff;
+
+	}
+
+.leaflet-tooltip-bottom:before {
+
+	top: 0;
+
+	margin-top: -12px;
+
+	margin-left: -6px;
+
+	border-bottom-color: #fff;
+
+	}
+
+.leaflet-tooltip-left {
+
+	margin-left: -6px;
+
+}
+
+.leaflet-tooltip-right {
+
+	margin-left: 6px;
+
+}
+
+.leaflet-tooltip-left:before,
+
+.leaflet-tooltip-right:before {
+
+	top: 50%;
+
+	margin-top: -6px;
+
+	}
+
+.leaflet-tooltip-left:before {
+
+	right: 0;
+
+	margin-right: -12px;
+
+	border-left-color: #fff;
+
+	}
+
+.leaflet-tooltip-right:before {
+
+	left: 0;
+
+	margin-left: -12px;
+
+	border-right-color: #fff;
+
+	}
+
+
+
+/* Printing */
+
+
+
+@media print {
+
+	/* Prevent printers from removing background-images of controls. */
+
+	.leaflet-control {
+
+		-webkit-print-color-adjust: exact;
+
+		print-color-adjust: exact;
+
+		}
+
+	}
+
 </style>
 <style>
-:root{--chrome:#f3f5f8;--panel:#fff;--line:#d9dee6;--ink:#1f2933;--muted:#5f6b7a;--accent:#0b5cad;--accent-soft:#e6f0fa;--warn:#c2410c;
-  --f:"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;color-scheme:light}
-*{box-sizing:border-box}html,body{height:100%;margin:0}
-body{background:var(--chrome);color:var(--ink);font:13px/1.4 var(--f);display:grid;grid-template-rows:auto 1fr;overflow:hidden}
-header{display:flex;align-items:center;gap:18px;padding:0 14px;height:46px;background:#fff;border-bottom:1px solid var(--line)}
-.brand{display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px;color:var(--accent);white-space:nowrap}.brand svg{width:22px;height:22px}
-.db{color:var(--muted);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-nav.tabs{display:flex;gap:2px;margin-left:auto;overflow-x:auto}
-nav.tabs span{padding:13px 12px 11px;color:#97a1ad;border-bottom:3px solid transparent;white-space:nowrap;cursor:default}
-nav.tabs span.on{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
-main{display:grid;grid-template-columns:290px 1fr 320px;min-height:0}
-aside{background:var(--panel);border-right:1px solid var(--line);overflow:auto;padding:14px 14px 20px}
-aside.right{border-right:0;border-left:1px solid var(--line)}
-h2{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px;font-weight:600}h2:first-child{margin-top:2px}
-label.f{display:block;font-size:12px;color:var(--muted);margin:8px 0 4px}
-select,input[type=range]{width:100%}
-select{font:13px var(--f);padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:#fff;color:var(--ink)}
-.radio{display:grid;gap:2px}.radio label{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:4px;cursor:pointer}
-.radio label:hover{background:var(--chrome)}.radio input:checked+span{font-weight:600;color:var(--accent)}
-.sub{padding-left:26px;display:grid;gap:2px}
-.seg{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line);border-radius:4px;overflow:hidden}
-.seg button{font:13px var(--f);border:0;background:#fff;padding:7px;cursor:pointer;color:var(--ink)}
-.seg button+button{border-left:1px solid var(--line)}.seg button[aria-pressed=true]{background:var(--accent);color:#fff}
-.chk{display:flex;gap:8px;align-items:center;margin:6px 0;cursor:pointer}
-.btn{font:13px var(--f);width:100%;padding:7px;border:1px solid var(--accent);color:var(--accent);background:#fff;border-radius:4px;cursor:pointer;margin-top:6px}
-.btn:hover{background:var(--accent-soft)}
-button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-.note{font-size:11.5px;color:var(--muted);margin:8px 0 0}
-#mapwrap{position:relative;min-width:0;min-height:0}#map{position:absolute;inset:0;background:#e8ecef}
-#div{position:absolute;top:0;bottom:0;width:0;z-index:900;pointer-events:none}
-#div::before{content:"";position:absolute;top:0;bottom:0;left:-2px;width:4px;background:#fff;box-shadow:0 0 0 1px rgba(0,0,0,.25)}
-#knob{position:absolute;top:50%;left:-19px;margin-top:-19px;width:38px;height:38px;border-radius:50%;border:2px solid var(--accent);background:#fff;color:var(--accent);cursor:ew-resize;pointer-events:auto;display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.3);touch-action:none;padding:0}
-#knob svg{width:20px;height:20px}
-.slabel{position:absolute;top:10px;z-index:901;background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:4px;padding:5px 9px;font-size:12px;font-weight:600;white-space:nowrap;pointer-events:none;box-shadow:0 1px 3px rgba(0,0,0,.12)}
-.slabel small{display:block;font-weight:400;color:var(--muted);font-size:11px}#lblL{right:10px}#lblR{left:10px}
-#legend{position:absolute;left:10px;bottom:24px;z-index:800;background:#fff;border:1px solid var(--line);border-radius:4px;padding:8px 10px;min-width:170px;box-shadow:0 1px 4px rgba(0,0,0,.15)}
-#legend b{display:block;font-size:12px;margin-bottom:6px}
-.lg{display:flex;align-items:center;gap:8px;font-size:12px;margin:3px 0;font-variant-numeric:tabular-nums}
-.lg i{width:22px;height:14px;border:1px solid rgba(0,0,0,.25);flex:none}
-.ramp{height:12px;width:190px;border:1px solid rgba(0,0,0,.2)}
-.rampt{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);width:190px}
-#zoomhint{position:absolute;right:10px;bottom:24px;z-index:800;background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:4px;padding:5px 9px;font-size:12px;color:var(--warn)}
-table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
-th{font-weight:600;text-align:right;color:var(--muted);padding:5px 4px;border-bottom:1px solid var(--line);font-size:11px}
+/* Layout: full-bleed map; floating glass panels (compare/layers left, impact right); swipe handle is the hero */
+:root{
+  --map:#e8ecf0; --surface:rgba(255,255,255,.86); --solid:#ffffff; --sunk:rgba(15,23,42,.045);
+  --line:rgba(15,23,42,.09); --line-strong:rgba(15,23,42,.16);
+  --ink:#0f172a; --muted:#5b6b80; --faint:#94a3b8;
+  --accent:#1662c4; --accent-ink:#ffffff; --accent-soft:rgba(22,98,196,.10);
+  --left:#475569; --right:#1662c4;
+  --worse:#d92d20; --worse-soft:rgba(217,45,32,.10); --better:#079455; --better-soft:rgba(7,148,85,.11);
+  --shadow:0 1px 2px rgba(15,23,42,.06),0 8px 28px rgba(15,23,42,.12);
+  --f:"Plus Jakarta Sans","Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --r:14px; color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --map:#0b1220; --surface:rgba(15,23,42,.80); --solid:#111a2e; --sunk:rgba(226,232,240,.05);
+  --line:rgba(226,232,240,.10); --line-strong:rgba(226,232,240,.18);
+  --ink:#e6edf6; --muted:#9aa9bd; --faint:#64748b;
+  --accent:#5aa2ff; --accent-ink:#06142b; --accent-soft:rgba(90,162,255,.14);
+  --left:#a3b1c4; --right:#5aa2ff;
+  --worse:#ff6b5e; --worse-soft:rgba(255,107,94,.14); --better:#3fd08b; --better-soft:rgba(63,208,139,.14);
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.45); color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--map);color:var(--ink);font:13px/1.45 var(--f);overflow:hidden;-webkit-font-smoothing:antialiased}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+#map{position:fixed;inset:0;background:var(--map)}
+.glass{background:var(--surface);backdrop-filter:blur(14px) saturate(1.4);-webkit-backdrop-filter:blur(14px) saturate(1.4);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow)}
+.ui{transition:opacity .25s ease,transform .25s ease}
+body.present .ui.hideable{opacity:0;pointer-events:none;transform:translateY(-6px)}
+
+/* top bar */
+#brand{position:fixed;z-index:1100;top:calc(env(safe-area-inset-top,0px) + 14px);left:max(16px,env(safe-area-inset-left,0px));display:flex;align-items:center;gap:12px;padding:8px 14px 8px 10px}
+#brand .mark{width:30px;height:30px;border-radius:9px;background:linear-gradient(140deg,#1d74e0,#0b3f8a);display:grid;place-items:center;color:#fff;flex:none}
+#brand .mark svg{width:18px;height:18px}
+#brand b{font-weight:700;font-size:14px;letter-spacing:-.01em}
+#brand small{display:block;color:var(--muted);font-size:11.5px;margin-top:-1px}
+#tools{position:fixed;z-index:1100;top:calc(env(safe-area-inset-top,0px) + 14px);right:max(16px,env(safe-area-inset-right,0px));display:flex;gap:8px;align-items:center;padding:5px}
+.seg{display:flex;background:var(--sunk);border-radius:10px;padding:3px;gap:2px}
+.seg button{border:0;background:transparent;padding:6px 10px;border-radius:7px;font-size:12px;font-weight:500;color:var(--muted);white-space:nowrap}
+.seg button[aria-pressed="true"]{background:var(--solid);color:var(--ink);box-shadow:0 1px 2px rgba(15,23,42,.12)}
+.icon-btn{width:34px;height:34px;border-radius:9px;border:0;background:transparent;display:grid;place-items:center;color:var(--muted)}
+.icon-btn:hover{background:var(--sunk);color:var(--ink)}
+.icon-btn svg{width:18px;height:18px}
+
+/* panels */
+.panel{position:fixed;z-index:1000;top:calc(env(safe-area-inset-top,0px) + 74px);bottom:calc(env(safe-area-inset-bottom,0px) + 16px);overflow:auto;padding:16px;scrollbar-width:thin}
+#left{left:max(16px,env(safe-area-inset-left,0px));width:332px}
+#right{right:max(16px,env(safe-area-inset-right,0px));width:352px}
+.sec+.sec{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.sec-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+.eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+
+/* scenario cards */
+.scard{position:relative;border:1px solid var(--line);background:var(--solid);border-radius:12px;padding:10px 12px 10px 16px}
+.scard+.scard{margin-top:8px}
+.scard::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:4px;border-radius:0 4px 4px 0;background:var(--c)}
+.scard.L{--c:var(--left)}.scard.R{--c:var(--right)}
+.scard .side{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--c)}
+.selwrap{position:relative;margin-top:2px}
+.selwrap select{appearance:none;-webkit-appearance:none;width:100%;border:0;background:transparent;font-weight:600;font-size:14px;padding:2px 24px 2px 0;color:var(--ink);text-overflow:ellipsis}
+.selwrap select option,.selwrap select optgroup{background:var(--solid);color:var(--ink)}
+.selwrap::after{content:"";position:absolute;right:4px;top:50%;width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-70%) rotate(45deg);pointer-events:none}
+.meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-top:6px;font-size:11.5px;color:var(--muted)}
+.chip{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:600;background:var(--sunk);color:var(--muted);white-space:nowrap}
+.chip.base{background:var(--accent-soft);color:var(--accent)}
+.idline{font-family:var(--mono);font-size:10.5px;color:var(--faint);margin-top:4px;word-break:break-all}
+#swap{position:absolute;right:12px;top:50%;transform:translateY(-50%);z-index:2}
+.cards{position:relative}
+.swap-btn{width:30px;height:30px;border-radius:50%;border:1px solid var(--line-strong);background:var(--solid);display:grid;place-items:center;color:var(--muted);box-shadow:var(--shadow)}
+.swap-btn:hover{color:var(--accent);border-color:var(--accent)}
+.swap-btn svg{width:15px;height:15px}
+
+/* switch */
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 0}
+.row label{font-size:12.5px;color:var(--ink);min-width:0}
+.row small{display:block;color:var(--muted);font-size:11px}
+.sw{appearance:none;-webkit-appearance:none;width:34px;height:20px;border-radius:999px;background:var(--line-strong);position:relative;flex:none;cursor:pointer;transition:background .2s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.25);transition:transform .2s}
+.sw:checked{background:var(--accent)}.sw:checked::after{transform:translateX(14px)}
+.sw:disabled{opacity:.4}
+
+/* layer tiles */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tile{position:relative;display:flex;flex-direction:column;gap:6px;padding:10px;border:1px solid var(--line);border-radius:11px;background:var(--solid);cursor:pointer;min-height:70px}
+.tile input{position:absolute;opacity:0;pointer-events:none}
+.tile svg{width:20px;height:20px;color:var(--muted)}
+.tile span{font-size:12px;font-weight:600;line-height:1.25}
+.tile small{font-size:10.5px;color:var(--muted);font-weight:500}
+.tile:hover{border-color:var(--line-strong)}
+.tile:has(input:checked){border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.tile:has(input:checked) svg{color:var(--accent)}
+.tile:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.sub{margin-top:10px}
+.sub .seg{width:100%}.sub .seg button{flex:1}
+input[type=range]{width:100%;accent-color:var(--accent)}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px}
+.ghost{display:flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--line-strong);background:var(--solid);border-radius:10px;padding:8px;font-size:12px;font-weight:600}
+.ghost:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.ghost:disabled{opacity:.45;cursor:default}
+.ghost svg{width:15px;height:15px}
+.hint{font-size:11.5px;color:var(--muted);margin:10px 0 0}
+kbd{font-family:var(--mono);font-size:10.5px;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--solid)}
+
+/* impact */
+.kpis{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kpi{border:1px solid var(--line);background:var(--solid);border-radius:12px;padding:10px 12px;border-top:3px solid var(--c);min-width:0}
+.kpi.L{--c:var(--left)}.kpi.R{--c:var(--right)}
+.kpi span{display:block;font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi strong{display:block;font-size:19px;font-weight:600;margin-top:2px}
+.delta{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:var(--muted)}
+.pill{display:inline-flex;align-items:center;gap:3px;border-radius:999px;padding:2px 8px;font:500 11.5px var(--mono);white-space:nowrap}
+.pill.up{background:var(--worse-soft);color:var(--worse)}.pill.dn{background:var(--better-soft);color:var(--better)}.pill.eq{background:var(--sunk);color:var(--muted)}
+
+/* all-scenarios list */
+.grp{margin-top:12px}
+.grp h4{margin:0 0 4px;font-size:11px;font-weight:700;color:var(--muted);display:flex;align-items:center;gap:6px}
+.grp h4::after{content:"";flex:1;height:1px;background:var(--line)}
+.srow{display:grid;grid-template-columns:minmax(0,1fr) 92px 70px;align-items:center;gap:8px;padding:6px 8px;margin:0 -8px;border-radius:9px;cursor:pointer;position:relative}
+.srow:hover{background:var(--sunk)}
+.srow.isL{box-shadow:inset 3px 0 0 var(--left)}.srow.isR{box-shadow:inset 3px 0 0 var(--right);background:var(--accent-soft)}
+.srow .nm{font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.srow .nm small{display:block;font-weight:500;color:var(--faint);font-size:10.5px}
+.dbar{position:relative;height:8px;border-radius:4px;background:var(--sunk)}
+.dbar i{position:absolute;top:0;bottom:0;border-radius:4px}
+.dbar::after{content:"";position:absolute;left:50%;top:-3px;bottom:-3px;width:1px;background:var(--line-strong)}
+.srow .val{font:500 11.5px var(--mono);text-align:right;white-space:nowrap}
+.srow .val.up{color:var(--worse)}.srow .val.dn{color:var(--better)}.srow .val.base{color:var(--accent);font-family:var(--f);font-weight:700;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase}
+
+/* metrics */
+table{width:100%;border-collapse:collapse;font-size:11.5px}
+th{font-weight:600;color:var(--faint);text-align:right;padding:4px 4px 6px;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em}
 th:first-child,td:first-child{text-align:left}
-td{padding:5px 4px;border-bottom:1px solid #eef1f4;text-align:right;vertical-align:top}
-td.up{color:#b42318}td.dn{color:#067647}td.eq{color:#97a1ad}
-#allt tr{cursor:pointer}#allt tr:hover td{background:var(--chrome)}#allt tr.isR td{background:var(--accent-soft)}#allt tr.isL td:first-child{box-shadow:inset 3px 0 0 #97a1ad}#allt tr.isR td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
-td small{display:block;color:var(--muted);font-size:10.5px;word-break:break-all}
-.kpi{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}.kpi div{border:1px solid var(--line);border-radius:4px;padding:8px}
-.kpi span{display:block;font-size:11px;color:var(--muted)}.kpi strong{font-size:16px;font-variant-numeric:tabular-nums}
-.leaflet-tooltip.fa{font:12px var(--f);padding:6px 8px}.fa-pop{font:12px var(--f)}.fa-pop td{padding:2px 6px;border:0}.leaflet-container{font:12px var(--f)}
-@media (max-width:1100px){main{grid-template-columns:260px 1fr}aside.right{display:none}}
-@media (max-width:700px){main{grid-template-columns:1fr;grid-template-rows:auto 1fr}aside.left{max-height:38vh;border-right:0;border-bottom:1px solid var(--line)}nav.tabs{display:none}}
+td{padding:6px 4px;border-top:1px solid var(--line);text-align:right;vertical-align:top}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+td:first-child{color:var(--ink)}
+
+/* swipe */
+#div{position:fixed;top:0;bottom:0;width:0;z-index:900;pointer-events:none}
+#div::before{content:"";position:absolute;top:0;bottom:0;left:-1.5px;width:3px;background:#fff;box-shadow:0 0 0 1px rgba(15,23,42,.22),0 0 18px rgba(15,23,42,.18)}
+#knob{position:absolute;top:50%;left:-24px;margin-top:-24px;width:48px;height:48px;border-radius:50%;border:0;background:#fff;color:#1662c4;pointer-events:auto;display:grid;place-items:center;box-shadow:0 0 0 1px rgba(15,23,42,.12),0 6px 18px rgba(15,23,42,.28);cursor:ew-resize;touch-action:none;transition:transform .15s}
+#knob:hover,#knob.drag{transform:scale(1.08)}
+#knob svg{width:22px;height:22px}
+.tag{position:absolute;top:calc(env(safe-area-inset-top,0px) + 76px);display:flex;align-items:center;gap:7px;white-space:nowrap;padding:6px 11px;border-radius:999px;font-size:12px;font-weight:600;pointer-events:none}
+.tag i{width:8px;height:8px;border-radius:50%;background:var(--c);flex:none}
+.tag small{color:var(--muted);font-weight:500}
+#lblL{right:12px;--c:var(--left)}#lblR{left:12px;--c:var(--right)}
+
+/* legend */
+#legend{position:fixed;z-index:1000;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 18px);padding:9px 14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;max-width:min(760px,calc(100vw - 32px));justify-content:center}
+#legend .lt{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.li{display:flex;align-items:center;gap:6px;font-size:12px;white-space:nowrap}
+.li i{width:16px;height:12px;border-radius:3px;border:1px solid rgba(15,23,42,.15)}
+.li i.dot{width:12px;border-radius:50%}
+.ramp{display:flex;flex-direction:column;gap:2px}
+.ramp b{display:block;width:170px;height:9px;border-radius:5px;border:1px solid rgba(15,23,42,.12)}
+.ramp span{display:flex;justify-content:space-between;width:170px;font:500 10.5px var(--mono);color:var(--muted)}
+.lsep{width:1px;align-self:stretch;background:var(--line)}
+#zoomhint{position:fixed;z-index:1000;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 74px);padding:6px 12px;font-size:12px;font-weight:600;color:var(--worse)}
+
+/* leaflet polish */
+.leaflet-container{font-family:var(--f);background:var(--map)}
+.leaflet-bottom.leaflet-right{margin-right:max(0px,env(safe-area-inset-right,0px))}
+.leaflet-control-zoom{border:1px solid var(--line)!important;border-radius:11px!important;overflow:hidden;box-shadow:var(--shadow)!important;margin:0 384px 64px 0!important}
+.leaflet-control-zoom a{background:var(--surface)!important;color:var(--ink)!important;border-bottom:1px solid var(--line)!important;width:34px!important;height:34px!important;line-height:34px!important;backdrop-filter:blur(10px)}
+.leaflet-control-attribution{background:transparent!important;color:var(--faint)!important;font-size:10px!important;margin-right:384px!important}
+.leaflet-control-attribution a{color:var(--muted)!important}
+body.present .leaflet-control-zoom,body.present .leaflet-control-attribution{margin-right:16px!important}
+.leaflet-tooltip.fa{font:12px var(--f);padding:7px 10px;border-radius:9px;border:1px solid var(--line);background:var(--solid);color:var(--ink);box-shadow:var(--shadow)}
+.leaflet-tooltip.fa::before{display:none}
+.leaflet-popup-content-wrapper{border-radius:13px;box-shadow:var(--shadow);background:var(--solid);color:var(--ink)}
+.leaflet-popup-tip{background:var(--solid)}
+.fa-pop{font:12px var(--f);min-width:230px}
+.fa-pop b.t{display:block;font-size:13px;margin-bottom:6px}
+.fa-pop table{font-size:11.5px}.fa-pop td{padding:4px 4px}
+@media (max-width:1180px){#right{display:none}.leaflet-control-zoom,.leaflet-control-attribution{margin-right:16px!important}}
+@media (max-width:760px){
+  #left{top:auto;left:12px;right:12px;width:auto;max-height:44vh;bottom:calc(env(safe-area-inset-bottom,0px) + 12px)}
+  #legend{bottom:auto;top:calc(env(safe-area-inset-top,0px) + 70px)}
+  #tools .seg{display:none}.tag{top:calc(env(safe-area-inset-top,0px) + 170px)}
+  #brand small{display:none}
+}
+@media (prefers-reduced-motion:reduce){.ui,#knob,.sw,.sw::after{transition:none}}
 </style>
 </head>
 <body>
-<header>
-  <div class="brand"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/><path d="M2 20c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/><path d="M12 3l6 6h-4v3h-4V9H6z"/></svg>FloodAdapt</div>
-  <div class="db" id="dbname"></div>
-  <nav class="tabs"><span>Site</span><span>Events</span><span>Projections</span><span>Measures</span><span>Strategies</span><span>Scenarios</span><span class="on">Output</span></nav>
+<div id="map" aria-label="Map"></div>
+
+<header id="brand" class="glass ui">
+  <div class="mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M2 14c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/><path d="M2 19c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/><path d="M12 3l5 5h-3v2.5h-4V8H7z" fill="currentColor" stroke="none"/></svg></div>
+  <div><b>FloodAdapt</b><small id="dbname"></small></div>
 </header>
-<main>
-<aside class="left">
-  <h2>Scenarios</h2>
-  <label class="f" for="scL">Left of slider</label><select id="scL"></select>
-  <label class="f" for="scR">Right of slider</label><select id="scR"></select>
-  <label class="chk" for="swipe"><input type="checkbox" id="swipe" checked> Compare with swipe slider</label>
-  <h2>Map layer</h2>
-  <div class="radio" role="radiogroup" aria-label="Map layer">
-    <label><input type="radio" name="lay" value="depth" checked><span>Flood map · water depth</span></label>
-    <label><input type="radio" name="lay" value="dmgheat"><span>Building damage · heatmap</span></label>
-    <label><input type="radio" name="lay" value="agg"><span>Impacts · aggregated damage</span></label>
-    <div class="sub" id="aggsub"></div>
-    <label><input type="radio" name="lay" value="bld"><span>Impacts · building damage</span></label>
+
+<div id="tools" class="glass ui">
+  <div class="seg" role="group" aria-label="Basemap" id="bm">
+    <button data-bm="streets" aria-pressed="true">Streets</button><button data-bm="light" aria-pressed="false">Light</button><button data-bm="dark" aria-pressed="false">Dark</button><button data-bm="sat" aria-pressed="false">Satellite</button><button data-bm="none" aria-pressed="false">None</button>
   </div>
-  <h2>Water depth style</h2>
-  <div class="seg" role="group" aria-label="Water depth style"><button id="stGui" aria-pressed="true">Classes (GUI)</button><button id="stHeat" aria-pressed="false">Heatmap</button></div>
-  <h2>Overlays</h2>
-  <label class="chk" for="ovDiff"><input type="checkbox" id="ovDiff"> <span id="diffLabel">Depth difference (right − left)</span></label>
-  <label class="chk" for="ovMeas"><input type="checkbox" id="ovMeas" checked> <span id="measLabel">Measures</span></label>
-  <label class="f" for="op">Layer opacity</label><input type="range" id="op" min="20" max="100" value="80">
-  <label class="f" for="bm">Basemap</label>
-  <select id="bm"><option value="streets">Streets</option><option value="light">Light gray</option><option value="topo">Topographic</option><option value="sat">Satellite</option><option value="none">None</option></select>
-  <button class="btn" id="goMeas">Zoom to measures</button>
-  <button class="btn" id="goAll">Zoom to full area</button>
-  <p class="note">Drag the white handle or use ← / → (Shift = big steps). Click a zone or building for values.</p>
-</aside>
-<div id="mapwrap">
-  <div id="map" aria-label="Map"></div>
-  <div id="div"><button id="knob" aria-label="Swipe handle"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M7 5v10L2 10zM13 5v10l5-5z"/></svg></button><div class="slabel" id="lblL"></div><div class="slabel" id="lblR"></div></div>
-  <div id="legend"></div>
-  <div id="zoomhint" hidden>Zoom in to see buildings (zoom ≥ 13)</div>
+  <button class="icon-btn" id="theme" title="Light / dark theme" aria-label="Toggle dark theme"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
+  <button class="icon-btn" id="present" title="Presentation mode (P): hide panels" aria-label="Presentation mode"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V5h4M20 9V5h-4M4 15v4h4M20 15v4h-4"/></svg></button>
 </div>
-<aside class="right">
-  <h2>All scenarios · total building damage</h2>
-  <table id="allt"><thead><tr><th>Scenario</th><th>Damage</th><th>Δ vs baseline</th></tr></thead><tbody></tbody></table>
-  <p class="note">Click a row to show it right of the slider (Shift+click = left).</p>
-  <h2>Metrics · left vs right</h2>
-  <div class="kpi"><div><span id="kL">Left</span><strong id="kLv"></strong></div><div><span id="kR">Right</span><strong id="kRv"></strong></div></div>
-  <p class="note" id="kD"></p>
-  <table id="mt"><thead><tr><th>Metric</th><th>Left</th><th>Right</th><th>Δ</th></tr></thead><tbody></tbody></table>
-  <p class="note">Values from FloodAdapt Infometrics (whole model domain).</p>
+
+<aside id="left" class="panel glass ui hideable" aria-label="Controls">
+  <section class="sec">
+    <div class="sec-h"><span class="eyebrow">Compare</span>
+      <label class="row" style="padding:0;gap:8px" for="swipe"><span style="font-size:12px;color:var(--muted)">Swipe</span><input type="checkbox" class="sw" id="swipe" checked></label></div>
+    <div class="cards">
+      <div class="scard L"><div class="side">Left</div><div class="selwrap"><select id="scL" aria-label="Left scenario"></select></div><div class="meta" id="metaL"></div></div>
+      <div class="scard R"><div class="side">Right</div><div class="selwrap"><select id="scR" aria-label="Right scenario"></select></div><div class="meta" id="metaR"></div></div>
+      <div id="swap"><button class="swap-btn" id="swapBtn" title="Swap left and right" aria-label="Swap left and right"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4v16M7 20l-3-3M7 20l3-3M17 20V4M17 4l-3 3M17 4l3 3"/></svg></button></div>
+    </div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><span class="eyebrow">Map layer</span></div>
+    <div class="tiles" role="radiogroup" aria-label="Map layer">
+      <label class="tile"><input type="radio" name="lay" value="depth" checked><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"/></svg><span>Water depth<br><small>Flood map</small></span></label>
+      <label class="tile"><input type="radio" name="lay" value="dmgheat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="6.5" opacity=".6"/><circle cx="12" cy="12" r="10" opacity=".3"/></svg><span>Damage heatmap<br><small>Buildings</small></span></label>
+      <label class="tile"><input type="radio" name="lay" value="agg"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 4h8v7H3zM13 4h8v4h-8zM13 10h8v10h-8zM3 13h8v7H3z"/></svg><span>Aggregated damage<br><small>Zones</small></span></label>
+      <label class="tile"><input type="radio" name="lay" value="bld"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 11l9-7 9 7v9H3z"/><path d="M9 20v-6h6v6"/></svg><span>Building damage<br><small>Zoom ≥ 13</small></span></label>
+    </div>
+    <div class="sub" id="subDepth"><div class="seg" role="group" aria-label="Water depth style"><button id="stGui" aria-pressed="true">Classes (GUI)</button><button id="stHeat" aria-pressed="false">Heatmap</button></div></div>
+    <div class="sub" id="subAgg" hidden><div class="seg" role="group" aria-label="Aggregation" id="aggsub"></div></div>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><span class="eyebrow">Overlays</span></div>
+    <div class="row"><label for="ovDiff"><span id="diffLabel">Depth change</span><small id="diffSub"></small></label><input type="checkbox" class="sw" id="ovDiff"></div>
+    <div class="row"><label for="ovMeas"><span>Measures</span><small id="measLabel"></small></label><input type="checkbox" class="sw" id="ovMeas" checked></div>
+    <div class="row" style="display:block"><label for="op" style="display:flex;justify-content:space-between"><span>Layer opacity</span><span class="num" id="opv" style="color:var(--muted)">80%</span></label><input type="range" id="op" min="20" max="100" value="80"></div>
+    <div class="btns">
+      <button class="ghost" id="goMeas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="7"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>Measures</button>
+      <button class="ghost" id="goAll"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>Full area</button>
+    </div>
+    <p class="hint">Drag the handle or press <kbd>←</kbd> <kbd>→</kbd> (<kbd>Shift</kbd> = big steps). <kbd>P</kbd> hides the panels.</p>
+  </section>
 </aside>
-</main>
+
+<aside id="right" class="panel glass ui hideable" aria-label="Impact">
+  <section class="sec">
+    <div class="sec-h"><span class="eyebrow">Total building damage</span></div>
+    <div class="kpis"><div class="kpi L"><span id="kL"></span><strong class="num" id="kLv"></strong></div><div class="kpi R"><span id="kR"></span><strong class="num" id="kRv"></strong></div></div>
+    <div class="delta" id="kD"></div>
+  </section>
+  <section class="sec">
+    <div class="sec-h"><span class="eyebrow">All scenarios · Δ damage vs baseline</span></div>
+    <div id="allt"></div>
+    <p class="hint">Click a scenario to show it on the right · <kbd>Shift</kbd>+click for the left.</p>
+  </section>
+  <section class="sec">
+    <div class="sec-h"><span class="eyebrow">Infometrics · left vs right</span></div>
+    <table id="mt"><thead><tr><th>Metric</th><th>Left</th><th>Right</th><th>Δ</th></tr></thead><tbody></tbody></table>
+  </section>
+</aside>
+
+<div id="div"><span class="tag glass" id="lblL"><i></i><span></span></span><span class="tag glass" id="lblR"><i></i><span></span></span>
+  <button id="knob" aria-label="Swipe handle: drag, or use the left and right arrow keys"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 6v12L3 12zM15 6v12l6-6z"/></svg></button></div>
+<div id="legend" class="glass ui"></div>
+<div id="zoomhint" class="glass" hidden>Zoom in to see buildings (zoom ≥ 13)</div>
+
 <script>/* @preserve
  * Leaflet 1.9.4, a JS library for interactive maps. https://leafletjs.com
  * (c) 2010-2023 Vladimir Agafonkin, (c) 2010-2011 CloudMade
@@ -796,15 +1616,26 @@ L.HeatLayer=(L.Layer?L.Layer:L.Class).extend({initialize:function(t,i){this._lat
 const FA={"db": "Hidalgo_DB_builder_v09", "bounds": [[25.9975499195721, -98.61328125], [26.81426619756147, -97.833251953125]], "minZoom": 9, "maxZoom": 15, "scenarios": [{"id": "flood_2015_current_no_measures", "label": "no_measures (current)", "group": "flood_2015", "strategy": "no_measures", "projection": "current"}, {"id": "flood_2018_current_no_measures", "label": "No measures", "group": "flood_2018", "strategy": "no_measures", "projection": "current"}, {"id": "flood_2019_current_no_measures", "label": "no_measures (current)", "group": "flood_2019", "strategy": "no_measures", "projection": "current"}, {"id": "flood_2020_current_no_measures", "label": "no_measures (current)", "group": "flood_2020", "strategy": "no_measures", "projection": "current"}, {"id": "flood_2025_current_no_measures", "label": "no_measures (current)", "group": "flood_2025", "strategy": "no_measures", "projection": "current"}, {"id": "flood_2018_current_pump_new_test", "label": "pump_new_test (pump_01\u201304)", "group": "flood_2018", "strategy": "pump_new_test", "projection": "current"}, {"id": "flood_2018_current_weslaco_1ft", "label": "weslaco_1ft", "group": "flood_2018", "strategy": "weslaco_1ft", "projection": "current"}, {"id": "flood_2018_current_weslaco_2ft", "label": "weslaco_2ft", "group": "flood_2018", "strategy": "weslaco_2ft", "projection": "current"}, {"id": "flood_2025_current_40042_pick_1ft_floodproof", "label": "40042_pick_1ft_floodproof (current)", "group": "flood_2025", "strategy": "40042_pick_1ft_floodproof", "projection": "current"}, {"id": "flood_2025_current_40040_pick_2ft_floodproof", "label": "40040_pick_2ft_floodproof (current)", "group": "flood_2025", "strategy": "40040_pick_2ft_floodproof", "projection": "current"}, {"id": "flood_2025_current_penitas_2ft_proof", "label": "penitas_2ft_proof (current)", "group": "flood_2025", "strategy": "penitas_2ft_proof", "projection": "current"}], "baseline": "flood_2015_current_no_measures", "baselines": ["flood_2015_current_no_measures", "flood_2018_current_no_measures", "flood_2019_current_no_measures", "flood_2020_current_no_measures", "flood_2025_current_no_measures"], "baseOf": {"flood_2015_current_no_measures": null, "flood_2018_current_no_measures": null, "flood_2019_current_no_measures": null, "flood_2020_current_no_measures": null, "flood_2025_current_no_measures": null, "flood_2018_current_pump_new_test": "flood_2018_current_no_measures", "flood_2018_current_weslaco_1ft": "flood_2018_current_no_measures", "flood_2018_current_weslaco_2ft": "flood_2018_current_no_measures", "flood_2025_current_40042_pick_1ft_floodproof": "flood_2025_current_no_measures", "flood_2025_current_40040_pick_2ft_floodproof": "flood_2025_current_no_measures", "flood_2025_current_penitas_2ft_proof": "flood_2025_current_no_measures"}, "left": "flood_2018_current_no_measures", "right": "flood_2018_current_pump_new_test", "diffs": ["flood_2018_current_no_measures__flood_2018_current_pump_new_test", "flood_2018_current_no_measures__flood_2018_current_weslaco_1ft", "flood_2018_current_no_measures__flood_2018_current_weslaco_2ft", "flood_2025_current_no_measures__flood_2025_current_40042_pick_1ft_floodproof", "flood_2025_current_no_measures__flood_2025_current_40040_pick_2ft_floodproof", "flood_2025_current_no_measures__flood_2025_current_penitas_2ft_proof", "flood_2018_current_pump_new_test__flood_2018_current_no_measures", "flood_2018_current_weslaco_1ft__flood_2018_current_no_measures", "flood_2018_current_weslaco_2ft__flood_2018_current_no_measures", "flood_2025_current_40042_pick_1ft_floodproof__flood_2025_current_no_measures", "flood_2025_current_40040_pick_2ft_floodproof__flood_2025_current_no_measures", "flood_2025_current_penitas_2ft_proof__flood_2025_current_no_measures"], "cfg": {"floodmap": {"bins": [1.0, 3.0, 5.0], "colors": ["#D7ECFB", "#8ABDDD", "#1C73A4", "#081D58"]}, "aggregation_dmg": {"bins": [1e-05, 50000000.0, 125000000.0, 250000000.0, 500000000.0], "colors": ["#FFFFFF", "#FEE9CE", "#FDBB84", "#FC844E", "#E03720", "#860000"]}, "footprints_dmg": {"bins": [1e-05, 120000.0, 400000.0, 800000.0, 2000000.0], "colors": ["#FFFFFF", "#FEE9CE", "#FDBB84", "#FC844E", "#E03720", "#860000"]}}, "units": {"name": "feet", "short": "ft"}, "heatTicks": [0, 0.7, 2.0, 4.2, "8+"], "heatDamageRef": 100000, "measures": {"type": "FeatureCollection", "features": [{"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-97.99481874066173, 26.16750414818192], [-97.95726159192799, 26.12011975427876]]}, "properties": {"name": "pump_01", "type": "pump", "detail": "500.0 cfs"}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-97.98759011863997, 26.16460575174473], [-97.95147090658985, 26.123324896647873]]}, "properties": {"name": "pump_02", "type": "pump", "detail": "500.0 cfs"}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-97.98075698535482, 26.161955865994813], [-97.94599442786931, 26.12766640984087]]}, "properties": {"name": "pump_03", "type": "pump", "detail": "500.0 cfs"}}, {"type": "Feature", "geometry": {"type": "LineString", "coordinates": [[-97.98679192916877, 26.146885023656097], [-97.95651513252112, 26.119756362294794]]}, "properties": {"name": "pump_04", "type": "pump", "detail": "500.0 cfs"}}, {"type": "Feature", "geometry": {"type": "Polygon", "coordinates": [[[-97.99450706940148, 26.172764568790697], [-98.01475020410321, 26.172798654279404], [-98.01452232641394, 26.147504482204283], [-97.97806189618274, 26.147368110619254], [-97.96617427674282, 26.147436296431962], [-97.96647811366141, 26.165981358134232], [-97.97639079313049, 26.171571570390356], [-97.98148006151719, 26.172594141195077], [-97.99450706940148, 26.172764568790697]]]}, "properties": {"name": "weslaco_1ft", "type": "floodproof_properties", "detail": "1.0 feet"}}, {"type": "Feature", "geometry": {"type": "Polygon", "coordinates": [[[-97.99450706940148, 26.172764568790697], [-98.01475020410321, 26.172798654279404], [-98.01452232641394, 26.147504482204283], [-97.97806189618274, 26.147368110619254], [-97.96617427674282, 26.147436296431962], [-97.96647811366141, 26.165981358134232], [-97.97639079313049, 26.171571570390356], [-97.98148006151719, 26.172594141195077], [-97.99450706940148, 26.172764568790697]]]}, "properties": {"name": "weslaco_2ft", "type": "floodproof_properties", "detail": "2.0 feet"}}]}, "measuresBy": {"flood_2015_current_no_measures": [], "flood_2018_current_no_measures": [], "flood_2019_current_no_measures": [], "flood_2020_current_no_measures": [], "flood_2025_current_no_measures": [], "flood_2018_current_pump_new_test": ["pump_01", "pump_02", "pump_03", "pump_04"], "flood_2018_current_weslaco_1ft": ["weslaco_1ft"], "flood_2018_current_weslaco_2ft": ["weslaco_2ft"], "flood_2025_current_40042_pick_1ft_floodproof": ["40042_pick_1ft_floodproof"], "flood_2025_current_40040_pick_2ft_floodproof": ["40040_pick_2ft_floodproof"], "flood_2025_current_penitas_2ft_proof": ["penitas_2ft_proof"]}};
 L.HeatLayer.prototype.onAdd=function(m){this._map=m;if(!this._canvas)this._initCanvas();m.getPane(this.options.pane||'overlayPane').appendChild(this._canvas);m.on('moveend',this._reset,this);if(m.options.zoomAnimation&&L.Browser.any3d)m.on('zoomanim',this._animateZoom,this);this._reset();};
 L.HeatLayer.prototype.onRemove=function(m){const c=this._canvas;if(c&&c.parentNode)c.parentNode.removeChild(c);m.off('moveend',this._reset,this);if(m.options.zoomAnimation)m.off('zoomanim',this._animateZoom,this);};
-const SCS=FA.scenarios, IDX={}, U=FA.units, CFG=FA.cfg; SCS.forEach((s,i)=>IDX[s.id]=i);
-const LBL=id=>SCS[IDX[id]].label;
-document.getElementById('dbname').textContent=FA.db+' · Output viewer · '+SCS.length+' scenarios'+(FA.baselines.length>1?' · '+FA.baselines.length+' baselines':'');
+FA.baselines=FA.baselines||[FA.baseline];FA.baseOf=FA.baseOf||{};
+const SCS=FA.scenarios,IDX={},U=FA.units,CFG=FA.cfg;SCS.forEach((s,i)=>IDX[s.id]=i);
+const SC=id=>SCS[IDX[id]], LBL=id=>SC(id).label, EVT=id=>(SC(id).group||'').replace(/^flood_/,'');
+const isBase=id=>FA.baselines.includes(id), baseOf=id=>FA.baseOf[id]||(isBase(id)?null:FA.baseline);
+const $=s=>document.querySelector(s);
+$('#dbname').textContent=`${FA.db} · ${SCS.length} scenarios${FA.baselines.length>1?' · '+FA.baselines.length+' baselines':''}`;
+// theme
+let theme='light';try{theme=localStorage.getItem('fa-theme')||(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');}catch(e){}
+document.documentElement.dataset.theme=theme;
 const BOUNDS=L.latLngBounds(FA.bounds);
 const blank='data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-const map=L.map('map',{zoomControl:true,minZoom:FA.minZoom-1,maxZoom:19});map.fitBounds(BOUNDS);
-const esri=(svc,att)=>L.tileLayer(`https://server.arcgisonline.com/ArcGIS/rest/services/${svc}/MapServer/tile/{z}/{y}/{x}`,{maxZoom:19,maxNativeZoom:svc.includes('Gray')?16:19,attribution:att});
-const base={streets:esri('World_Street_Map','Tiles © Esri — Esri, HERE, Garmin, OpenStreetMap contributors'),light:esri('Canvas/World_Light_Gray_Base','Tiles © Esri'),topo:esri('World_Topo_Map','Tiles © Esri'),sat:esri('World_Imagery','Imagery © Esri, Maxar, Earthstar Geographics')};
-let curBase=base.streets.addTo(map);
+const map=L.map('map',{zoomControl:false,minZoom:FA.minZoom-1,maxZoom:19,zoomSnap:0.25,wheelPxPerZoomLevel:90});
+L.control.zoom({position:'bottomright'}).addTo(map);
+map.fitBounds(BOUNDS,{paddingTopLeft:[360,80],paddingBottomRight:[380,70]});
+const esri=(svc,att,mz)=>L.tileLayer(`https://server.arcgisonline.com/ArcGIS/rest/services/${svc}/MapServer/tile/{z}/{y}/{x}`,{maxZoom:19,maxNativeZoom:mz||19,attribution:att});
+const base={streets:esri('World_Street_Map','Esri, HERE, Garmin, © OpenStreetMap contributors'),light:esri('Canvas/World_Light_Gray_Base','Esri',16),dark:esri('Canvas/World_Dark_Gray_Base','Esri',16),sat:esri('World_Imagery','Esri, Maxar, Earthstar Geographics')};
+let curBase=null,bmKey=theme==='dark'?'dark':'streets',bmChosen=false;
+function setBase(k){if(curBase)curBase.remove();curBase=base[k]||null;if(curBase){curBase.addTo(map);curBase.bringToBack();}bmKey=k;
+  document.querySelectorAll('#bm button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.bm===k));}
+setBase(bmKey);
 map.attributionControl.setPrefix('FloodAdapt · SFINCS / Delft-FIAT');
 ['L','R','top'].forEach((p,i)=>{map.createPane(p);map.getPane(p).style.zIndex=[420,410,450][i];});
 let side={L:FA.left,R:FA.right},swipeOn=true,frac=0.5,style='gui',layer='depth',aggKey=0,opacity=0.8;
@@ -812,12 +1643,13 @@ const tileOpt=pane=>({pane,maxNativeZoom:FA.maxZoom,maxZoom:19,minZoom:FA.minZoo
 const tiles={L:L.tileLayer('',tileOpt('L')),R:L.tileLayer('',tileOpt('R'))};
 const diff=L.tileLayer('',{pane:'top',maxNativeZoom:FA.maxZoom,maxZoom:19,bounds:BOUNDS,errorTileUrl:blank,opacity:0.95});
 const DIFFS=new Set(FA.diffs);
-function diffKey(){const k=side.L+'__'+side.R;if(DIFFS.has(k))return [k,`Δ depth: ${LBL(side.R)} − ${LBL(side.L)}`];
-  const b=FA.baseOf[side.R]||FA.baseline,kb=b+'__'+side.R;if(DIFFS.has(kb))return [kb,`Δ depth: ${LBL(side.R)} − ${LBL(b)} (baseline)`];return [null,'Δ depth not pre-rendered for this pair'];}
-const money=v=>v>=1e6?'$'+(v/1e6).toFixed(v>=1e8?0:1)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K':'$'+Math.round(v);
+function diffKey(){const k=side.L+'__'+side.R;if(DIFFS.has(k))return [k,`${LBL(side.R)} − ${LBL(side.L)}`];
+  const b=baseOf(side.R),kb=b+'__'+side.R;if(b&&DIFFS.has(kb))return [kb,`${LBL(side.R)} − baseline ${EVT(b)}`];return [null,'not pre-rendered for this pair'];}
+const money=v=>{const a=Math.abs(v);return a>=1e6?'$'+(v/1e6).toFixed(a>=1e8?0:1)+'M':a>=1e3?'$'+(v/1e3).toFixed(0)+'K':'$'+Math.round(v);};
 const M1=v=>'$'+(v/1e6).toLocaleString(undefined,{minimumFractionDigits:1,maximumFractionDigits:1})+'M';
+const sgn=d=>(d>0?'+':d<0?'−':'')+money(Math.abs(d));
 function binColor(v,c){for(let i=c.bins.length-1;i>=0;i--)if(v>=c.bins[i])return c.colors[i+1];return c.colors[0];}
-// buildings: lat, lon, dmg[0..N-1], dep[0..N-1], type
+// buildings
 const BLD=(()=>{const bin=atob(FA_BLD.b64),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);
   const a=new Int32Array(u.buffer),n=FA_BLD.n,N=FA_BLD.scenarios.length,nc=3+2*N;
   const o={n,lat:new Float64Array(n),lon:new Float64Array(n),dmg:[],dep:[],type:new Uint8Array(n),grid:new Map()};
@@ -827,100 +1659,120 @@ const BLD=(()=>{const bin=atob(FA_BLD.b64),u=new Uint8Array(bin.length);for(let 
   return o;})();
 const bIdx=id=>FA_BLD.scenarios.indexOf(id);
 const HP={};function heatPts(id){if(HP[id])return HP[id];const s=bIdx(id),p=[];if(s<0)return p;for(let i=0;i<BLD.n;i++){const d=BLD.dmg[s][i];if(d>0)p.push([BLD.lat[i],BLD.lon[i],Math.min(1,d/FA.heatDamageRef)]);}return HP[id]=p;}
-const heatOpt=pane=>({pane,radius:16,blur:18,maxZoom:18,max:1,minOpacity:0.2,gradient:{0.2:'#2c7bb6',0.4:'#00c4e6',0.55:'#5ee35e',0.7:'#ffe93b',0.85:'#ff8c1a',1:'#d7191c'}});
+const HEAT_G={0.2:'#2c7bb6',0.4:'#00c4e6',0.55:'#5ee35e',0.7:'#ffe93b',0.85:'#ff8c1a',1:'#d7191c'};
+const heatOpt=pane=>({pane,radius:16,blur:18,maxZoom:18,max:1,minOpacity:0.2,gradient:HEAT_G});
 const heat={L:L.heatLayer([],heatOpt('L')),R:L.heatLayer([],heatOpt('R'))};
-// aggregations: properties.V[scenarioIndex] = values
-const sub=document.getElementById('aggsub');
-FA_AGG.forEach((g,i)=>sub.insertAdjacentHTML('beforeend',`<label><input type="radio" name="agg" value="${i}" ${i?'':'checked'}><span>${g.name}</span></label>`));
+// aggregations
+const sub=$('#aggsub');
+FA_AGG.forEach((g,i)=>sub.insertAdjacentHTML('beforeend',`<button data-agg="${i}" aria-pressed="${i?'false':'true'}">${g.name}</button>`));
 function aggLayer(pane,id){const G=FA_AGG[aggKey],si=G.scenarios.indexOf(id),li=G.scenarios.indexOf(side.L),ri=G.scenarios.indexOf(side.R);
-  return L.geoJSON(G.fc,{pane,style:f=>({color:'#555',weight:0.6,fillColor:binColor(((f.properties.V[si]||[0])[0]),CFG.aggregation_dmg),fillOpacity:opacity}),
+  return L.geoJSON(G.fc,{pane,style:f=>({color:theme==='dark'?'#cbd5e1':'#475569',weight:0.6,opacity:.7,fillColor:binColor(((f.properties.V[si]||[0])[0]),CFG.aggregation_dmg),fillOpacity:opacity}),
     onEachFeature:(f,l)=>{const p=f.properties,a=p.V[li]||[],b=p.V[ri]||[];
-      l.bindTooltip(`<b>${p.name}</b><br>${LBL(side.L)}: ${money(a[0]||0)}<br>${LBL(side.R)}: ${money(b[0]||0)}`,{className:'fa',sticky:true});
-      l.on('click',e=>{const rows=G.keys.map((kk,i)=>`<tr><td>${G.labels[i]}</td><td>${i?Math.round(a[i]||0).toLocaleString():money(a[i]||0)}</td><td>${i?Math.round(b[i]||0).toLocaleString():money(b[i]||0)}</td></tr>`).join('');
-        L.popup({maxWidth:380}).setLatLng(e.latlng).setContent(`<div class="fa-pop"><b>${p.name}</b> <small>(${p.id})</small><table><tr><td></td><td><b>${LBL(side.L)}</b></td><td><b>${LBL(side.R)}</b></td></tr>${rows}</table></div>`).openOn(map);});}});}
+      l.bindTooltip(`<b>${p.name}</b><br>${LBL(side.L)}: <span class="num">${money(a[0]||0)}</span><br>${LBL(side.R)}: <span class="num">${money(b[0]||0)}</span>`,{className:'fa',sticky:true});
+      l.on('click',e=>{const rows=G.keys.map((kk,i)=>`<tr><td>${G.labels[i]}</td><td class="n">${i?Math.round(a[i]||0).toLocaleString():money(a[i]||0)}</td><td class="n">${i?Math.round(b[i]||0).toLocaleString():money(b[i]||0)}</td></tr>`).join('');
+        L.popup({maxWidth:400}).setLatLng(e.latlng).setContent(`<div class="fa-pop"><b class="t">${p.name}</b><table><tr><th></th><th>${LBL(side.L)}</th><th>${LBL(side.R)}</th></tr>${rows}</table></div>`).openOn(map);});}});}
 let agg={L:null,R:null},bld={L:null,R:null};
 const BldLayer=L.GridLayer.extend({createTile:function(c){const t=document.createElement('canvas');t.width=t.height=256;if(c.z<13)return t;
   const ctx=t.getContext('2d'),s=bIdx(this.options.id),sz=this.getTileSize(),nw=map.unproject(c.scaleBy(sz),c.z),se=map.unproject(c.add([1,1]).scaleBy(sz),c.z),r=c.z>=16?5:c.z>=15?3.5:2.5;
   if(s<0)return t;
   for(let la=Math.floor(se.lat*100);la<=Math.floor(nw.lat*100);la++)for(let lo=Math.floor(nw.lng*100);lo<=Math.floor(se.lng*100);lo++){const g=BLD.grid.get(la+'_'+lo);if(!g)continue;
     for(const i of g){const d=BLD.dmg[s][i];if(d<=0)continue;const p=map.project([BLD.lat[i],BLD.lon[i]],c.z).subtract(c.scaleBy(sz));if(p.x<-6||p.y<-6||p.x>262||p.y>262)continue;
-      ctx.beginPath();ctx.arc(p.x,p.y,r,0,7);ctx.fillStyle=binColor(d,CFG.footprints_dmg);ctx.fill();ctx.lineWidth=0.6;ctx.strokeStyle='rgba(60,60,60,.7)';ctx.stroke();}}
+      ctx.beginPath();ctx.arc(p.x,p.y,r,0,7);ctx.fillStyle=binColor(d,CFG.footprints_dmg);ctx.fill();ctx.lineWidth=0.7;ctx.strokeStyle='rgba(30,41,59,.65)';ctx.stroke();}}
   return t;}});
 map.on('click',e=>{if(layer!=='bld'||map.getZoom()<13)return;let best=-1,bd=1e9;const la=Math.floor(e.latlng.lat*100),lo=Math.floor(e.latlng.lng*100);
   for(let a=la-1;a<=la+1;a++)for(let b=lo-1;b<=lo+1;b++){const g=BLD.grid.get(a+'_'+b);if(!g)continue;for(const i of g){const d=map.latLngToContainerPoint([BLD.lat[i],BLD.lon[i]]).distanceTo(e.containerPoint);if(d<bd){bd=d;best=i;}}}
   if(best<0||bd>10)return;const i=best,f=v=>v<=-99?'—':v.toFixed(2)+' '+U.short;
-  const rows=[...new Set([side.L,side.R,FA.baseOf[side.R]||FA.baseline])].map(id=>{const s=bIdx(id);return `<tr><td>${LBL(id)}</td><td>${money(BLD.dmg[s][i])}</td><td>${f(BLD.dep[s][i])}</td></tr>`;}).join('');
-  L.popup().setLatLng([BLD.lat[i],BLD.lon[i]]).setContent(`<div class="fa-pop"><b>${FA_BLD.types[BLD.type[i]]||''} building</b><table><tr><td></td><td><b>Damage</b></td><td><b>Inundation depth</b></td></tr>${rows}</table></div>`).openOn(map);});
-// measures (only those of the two scenarios on screen)
+  const rows=[...new Set([side.L,side.R,baseOf(side.R)].filter(Boolean))].map(id=>{const s=bIdx(id);return s<0?'':`<tr><td>${LBL(id)}</td><td class="n">${money(BLD.dmg[s][i])}</td><td class="n">${f(BLD.dep[s][i])}</td></tr>`;}).join('');
+  L.popup().setLatLng([BLD.lat[i],BLD.lon[i]]).setContent(`<div class="fa-pop"><b class="t">${FA_BLD.types[BLD.type[i]]||''} building</b><table><tr><th></th><th>Damage</th><th>Depth</th></tr>${rows}</table></div>`).openOn(map);});
+// measures
 const measLayer=L.layerGroup().addTo(map);
 function drawMeasures(){measLayer.clearLayers();const names=new Set([...(FA.measuresBy[side.L]||[]),...(FA.measuresBy[side.R]||[])]);
-  const feats=FA.measures.features.filter(f=>names.has(f.properties.name));
-  L.geoJSON({type:'FeatureCollection',features:feats},{pane:'top',style:()=>({color:'#7b2cbf',weight:3,dashArray:'6 5',fillOpacity:0.15}),
-    pointToLayer:(f,ll)=>L.circleMarker(ll,{pane:'top',radius:6,color:'#fff',weight:2,fillColor:'#7b2cbf',fillOpacity:1}),
-    onEachFeature:(f,l)=>l.bindTooltip(`${f.properties.name} · ${f.properties.type}${f.properties.detail?' · '+f.properties.detail:''}`,{className:'fa'})}).addTo(measLayer);
-  feats.filter(f=>f.geometry.type==='LineString'&&f.properties.type==='pump').forEach(f=>{const c=f.geometry.coordinates;[[c[0],'intake'],[c[c.length-1],'outfall']].forEach(([p,n],j)=>L.circleMarker([p[1],p[0]],{pane:'top',radius:j?5:7,color:'#fff',weight:2,fillColor:'#7b2cbf',fillOpacity:1}).bindTooltip(f.properties.name+' '+n,{className:'fa'}).addTo(measLayer));});
-  document.getElementById('measLabel').textContent=names.size?'Measures: '+[...names].join(', '):'Measures (none in these scenarios)';
-  document.getElementById('goMeas').disabled=!names.size;}
+  const feats=FA.measures.features.filter(f=>names.has(f.properties.name)),col='#8b3dff';
+  L.geoJSON({type:'FeatureCollection',features:feats},{pane:'top',style:()=>({color:col,weight:3,dashArray:'7 5',fillColor:col,fillOpacity:0.12}),
+    pointToLayer:(f,ll)=>L.circleMarker(ll,{pane:'top',radius:6,color:'#fff',weight:2,fillColor:col,fillOpacity:1}),
+    onEachFeature:(f,l)=>l.bindTooltip(`<b>${f.properties.name}</b><br>${f.properties.type}${f.properties.detail?' · '+f.properties.detail:''}`,{className:'fa'})}).addTo(measLayer);
+  feats.filter(f=>f.geometry.type==='LineString'&&f.properties.type==='pump').forEach(f=>{const c=f.geometry.coordinates;[[c[0],'intake'],[c[c.length-1],'outfall']].forEach(([p,n],j)=>L.circleMarker([p[1],p[0]],{pane:'top',radius:j?5:7,color:'#fff',weight:2,fillColor:col,fillOpacity:1}).bindTooltip(f.properties.name+' · '+n,{className:'fa'}).addTo(measLayer));});
+  $('#measLabel').textContent=names.size?[...names].join(', '):'none in these scenarios';$('#goMeas').disabled=!names.size;$('#ovMeas').disabled=!names.size;}
 function clearAll(){['L','R'].forEach(s=>{tiles[s].remove();heat[s].remove();if(agg[s])agg[s].remove();if(bld[s])bld[s].remove();});}
 function render(){clearAll();(swipeOn?['L','R']:['R']).forEach(s=>{const id=side[s];
     if(layer==='depth'){tiles[s].setUrl(`tiles/${style}/${id}/{z}/{x}/{y}.png`);tiles[s].setOpacity(opacity);tiles[s].addTo(map);}
     if(layer==='dmgheat'){heat[s].setLatLngs(heatPts(id));heat[s].addTo(map);heat[s]._canvas.style.opacity=opacity;}
     if(layer==='agg'){agg[s]=aggLayer(s,id).addTo(map);}
     if(layer==='bld'){bld[s]=new BldLayer({pane:s,id,maxZoom:19}).addTo(map);}});
-  const [dk,dl]=diffKey();document.getElementById('diffLabel').textContent=dl;
-  if(document.getElementById('ovDiff').checked&&dk){diff.setUrl(`tiles/diff/${dk}/{z}/{x}/{y}.png`);diff.addTo(map);}else diff.remove();
-  sub.style.opacity=layer==='agg'?1:.45;document.getElementById('zoomhint').hidden=!(layer==='bld'&&map.getZoom()<13);
+  const [dk,dl]=diffKey();$('#diffSub').textContent=dl;
+  if($('#ovDiff').checked&&dk){diff.setUrl(`tiles/diff/${dk}/{z}/{x}/{y}.png`);diff.addTo(map);}else diff.remove();
+  $('#subDepth').hidden=layer!=='depth';$('#subAgg').hidden=layer!=='agg';
+  $('#zoomhint').hidden=!(layer==='bld'&&map.getZoom()<13);
   drawMeasures();legend();labels();clip();}
-function legend(){const el=document.getElementById('legend');let h='';
-  if(layer==='depth'&&style==='gui'){const b=CFG.floodmap.bins,c=CFG.floodmap.colors,lab=[`< ${b[0]}`].concat(b.slice(1).map((v,i)=>`${b[i]} – ${v}`),[`> ${b[b.length-1]}`]);h=`<b>Water depth (${U.name})</b>`+c.map((x,i)=>`<div class="lg"><i style="background:${x}"></i>${lab[i]}</div>`).join('');}
-  if(layer==='depth'&&style==='heat'){const t=FA.heatTicks;h=`<b>Water depth (${U.name})</b><div class="ramp" style="background:linear-gradient(90deg,#2c7bb6,#00c4e6,#5ee35e,#ffe93b,#ff8c1a,#d7191c)"></div><div class="rampt">${t.map(v=>`<span>${v}</span>`).join('')}</div>`;}
-  if(layer==='dmgheat')h='<b>Building damage density</b><div class="ramp" style="background:linear-gradient(90deg,#2c7bb6,#00c4e6,#5ee35e,#ffe93b,#ff8c1a,#d7191c)"></div><div class="rampt"><span>low</span><span>high</span></div><div class="lg" style="color:var(--muted);font-size:11px">Weighted by FIAT total damage per building</div>';
-  const binsLeg=(c,title,round)=>{const b=c.bins,lab=['$0'].concat(b.slice(1).map((v,i)=>i?`${money(b[i])} – ${money(v)}`:`< ${money(v)}`),[`> ${money(b[b.length-1])}`]);return `<b>${title}</b>`+c.colors.map((x,i)=>`<div class="lg"><i style="background:${x};${round?'border-radius:50%;width:14px':''}"></i>${lab[i]}</div>`).join('');};
-  if(layer==='agg')h=binsLeg(CFG.aggregation_dmg,`Total damage (${FA_AGG[aggKey].name})`);
+function legend(){const el=$('#legend');let h='';
+  const ramp=(t,ticks)=>`<span class="lt">${t}</span><div class="ramp"><b style="background:linear-gradient(90deg,#2c7bb6,#00c4e6,#5ee35e,#ffe93b,#ff8c1a,#d7191c)"></b><span>${ticks.map(v=>`<em style="font-style:normal">${v}</em>`).join('')}</span></div>`;
+  if(layer==='depth'&&style==='gui'){const b=CFG.floodmap.bins,c=CFG.floodmap.colors,lab=[`< ${b[0]}`].concat(b.slice(1).map((v,i)=>`${b[i]}–${v}`),[`> ${b[b.length-1]}`]);h=`<span class="lt">Water depth · ${U.short}</span>`+c.map((x,i)=>`<span class="li"><i style="background:${x}"></i>${lab[i]}</span>`).join('');}
+  if(layer==='depth'&&style==='heat')h=ramp(`Water depth · ${U.short}`,FA.heatTicks);
+  if(layer==='dmgheat')h=ramp('Building damage density',['low','','high']);
+  const binsLeg=(c,title,dot)=>{const b=c.bins,lab=['$0'].concat(b.slice(1).map((v,i)=>i?`${money(b[i])}–${money(v)}`:`< ${money(v)}`),[`> ${money(b[b.length-1])}`]);return `<span class="lt">${title}</span>`+c.colors.map((x,i)=>dot&&!i?'':`<span class="li"><i class="${dot?'dot':''}" style="background:${x}"></i>${lab[i]}</span>`).join('');};
+  if(layer==='agg')h=binsLeg(CFG.aggregation_dmg,`Damage · ${FA_AGG[aggKey].name}`);
   if(layer==='bld')h=binsLeg(CFG.footprints_dmg,'Building damage',true);
-  if(document.getElementById('ovDiff').checked){const [dk,dl]=diffKey();h+=dk?`<b style="margin-top:8px">${dl} (${U.short})</b><div class="ramp" style="background:linear-gradient(90deg,#00441b,#5aae61,#a6dba0,#fff,#f4a582,#d6604d,#67001f)"></div><div class="rampt"><span>−1</span><span>shallower | deeper</span><span>+1</span></div>`:`<b style="margin-top:8px;color:var(--warn)">${dl}</b>`;}
+  if($('#ovDiff').checked){const [dk]=diffKey();h+=`<span class="lsep"></span>`+(dk?`<span class="lt">Δ depth</span><span class="li"><i style="background:#1b7837"></i>shallower</span><span class="li"><i style="background:#d6604d"></i>deeper</span>`:`<span class="lt" style="color:var(--worse)">Δ not available for this pair</span>`);}
   el.innerHTML=h;}
-function labels(){document.getElementById('lblL').innerHTML=`${LBL(side.L)}<small>${side.L}</small>`;document.getElementById('lblR').innerHTML=`${LBL(side.R)}<small>${side.R}</small>`;
-  document.getElementById('lblL').hidden=!swipeOn;document.getElementById('div').style.display=swipeOn?'':'none';
-  scL.value=side.L;scR.value=side.R;metrics();allTable();}
-function clip(){const size=map.getSize(),x=Math.round(size.x*frac);document.getElementById('div').style.left=x+'px';
+function chipsFor(id){const b=baseOf(id);return `<span class="chip">${EVT(id)||SC(id).group}</span>`+(isBase(id)?'<span class="chip base">Baseline</span>':b?`<span>vs ${LBL(b)}${FA.baselines.length>1?' '+EVT(b):''}</span>`:'');}
+function labels(){
+  $('#lblL span').innerHTML=`${LBL(side.L)} <small>${EVT(side.L)}</small>`;$('#lblR span').innerHTML=`${LBL(side.R)} <small>${EVT(side.R)}</small>`;
+  $('#lblL').hidden=!swipeOn;$('#div').style.display=swipeOn?'':'none';
+  $('#metaL').innerHTML=chipsFor(side.L)+`<div class="idline" style="width:100%">${side.L}</div>`;$('#metaR').innerHTML=chipsFor(side.R)+`<div class="idline" style="width:100%">${side.R}</div>`;
+  scL.value=side.L;scR.value=side.R;$('.scard.L').style.opacity=swipeOn?1:.5;metrics();allList();}
+function clip(){const size=map.getSize(),x=Math.round(size.x*frac);$('#div').style.left=x+'px';
   const nw=map.containerPointToLayerPoint([0,0]),se=map.containerPointToLayerPoint(size),cx=map.containerPointToLayerPoint([x,0]).x;
   map.getPane('L').style.clip=swipeOn?`rect(${nw.y}px, ${cx}px, ${se.y}px, ${nw.x}px)`:'';map.getPane('R').style.clip=swipeOn?`rect(${nw.y}px, ${se.x}px, ${se.y}px, ${cx}px)`:'';}
-map.on('move zoom resize viewreset zoomend',()=>{clip();document.getElementById('zoomhint').hidden=!(layer==='bld'&&map.getZoom()<13);});
+map.on('move zoom resize viewreset zoomend',()=>{clip();$('#zoomhint').hidden=!(layer==='bld'&&map.getZoom()<13);});
+const pill=(d,f)=>{const c=Math.abs(d)<1e-9?'eq':d>0?'up':'dn';return `<span class="pill ${c}">${c==='eq'?'0':(d>0?'▲ ':'▼ ')+f(Math.abs(d))}</span>`;};
 function fmt(k,v){return k==='TotalDamageEvent'?money(v):(Math.abs(v)<100&&v%1?v.toFixed(1):Math.round(v).toLocaleString());}
-function metrics(){const A=FA_METRICS[side.L]||{},B=FA_METRICS[side.R]||{},tb=document.querySelector('#mt tbody');
-  document.getElementById('kL').textContent=LBL(side.L);document.getElementById('kR').textContent=LBL(side.R);
-  if(A.TotalDamageEvent&&B.TotalDamageEvent){const ta=A.TotalDamageEvent.v,tv=B.TotalDamageEvent.v,d=tv-ta;document.getElementById('kLv').textContent=M1(ta);document.getElementById('kRv').textContent=M1(tv);
-    document.getElementById('kD').textContent=`Total building damage, right − left: ${d>=0?'+':'−'}${money(Math.abs(d))} (${(d/ta*100).toFixed(3)}%)`;}
-  tb.innerHTML=Object.keys(A).filter(k=>k!=='TotalDamageEvent'&&B[k]).map(k=>{const a=A[k].v,b=B[k].v,dd=b-a,cls=Math.abs(dd)<1e-9?'eq':dd>0?'up':'dn';
-    return `<tr><td>${A[k].long}</td><td>${fmt(k,a)}</td><td>${fmt(k,b)}</td><td class="${cls}">${Math.abs(dd)<1e-9?'0':(dd>0?'+':'')+fmt(k,dd)}</td></tr>`;}).join('');}
-function allTable(){const tb=document.querySelector('#allt tbody'),multi=FA.baselines.length>1;
-  tb.innerHTML=SCS.map(s=>{const bid=FA.baseOf[s.id],b0=bid?(FA_METRICS[bid]||{}).TotalDamageEvent:null,t=(FA_METRICS[s.id]||{}).TotalDamageEvent;
-    const v=t?t.v:NaN,d=b0&&t?v-b0.v:NaN,cls=!isFinite(d)||Math.abs(d)<1e-9?'eq':d>0?'up':'dn';
-    const c=(s.id===side.R?'isR ':'')+(s.id===side.L?'isL':'');
-    const dtxt=!bid?'<b>baseline</b>':isFinite(d)?(d>=0?'+':'−')+money(Math.abs(d))+(multi?`<small>vs ${LBL(bid)}</small>`:''):'—';
-    return `<tr data-id="${s.id}" class="${c}"><td>${s.label}<small>${s.id}</small></td><td>${isFinite(v)?M1(v):'—'}</td><td class="${cls}">${dtxt}</td></tr>`;}).join('');}
-document.querySelector('#allt tbody').addEventListener('click',e=>{const tr=e.target.closest('tr');if(!tr)return;side[e.shiftKey?'L':'R']=tr.dataset.id;render();});
-const scL=document.getElementById('scL'),scR=document.getElementById('scR');
+function metrics(){const A=FA_METRICS[side.L]||{},B=FA_METRICS[side.R]||{};
+  $('#kL').textContent=LBL(side.L)+' · '+EVT(side.L);$('#kR').textContent=LBL(side.R)+' · '+EVT(side.R);
+  if(A.TotalDamageEvent&&B.TotalDamageEvent){const ta=A.TotalDamageEvent.v,tv=B.TotalDamageEvent.v,d=tv-ta;$('#kLv').textContent=M1(ta);$('#kRv').textContent=M1(tv);
+    $('#kD').innerHTML=`${pill(d,money)}<span>right − left · <span class="num">${(d/ta*100).toFixed(3)}%</span></span>`;}
+  $('#mt tbody').innerHTML=Object.keys(A).filter(k=>k!=='TotalDamageEvent'&&B[k]).map(k=>{const a=A[k].v,b=B[k].v,dd=b-a;
+    return `<tr><td>${A[k].long}</td><td class="n">${fmt(k,a)}</td><td class="n">${fmt(k,b)}</td><td class="n">${pill(dd,v=>fmt(k,v))}</td></tr>`;}).join('');}
+function allList(){const tot=id=>((FA_METRICS[id]||{}).TotalDamageEvent||{}).v;
+  const ds=SCS.filter(s=>!isBase(s.id)&&baseOf(s.id)).map(s=>Math.abs((tot(s.id)||0)-(tot(baseOf(s.id))||0)));const mx=Math.max(1,...ds);
+  const groups={};SCS.forEach(s=>{(groups[s.group]=groups[s.group]||[]).push(s);});
+  $('#allt').innerHTML=Object.entries(groups).map(([g,list])=>`<div class="grp"><h4>${g.replace(/^flood_/,'Event ')}</h4>`+list.sort((a,b)=>isBase(b.id)-isBase(a.id)).map(s=>{
+    const v=tot(s.id),b=baseOf(s.id),d=b&&isFinite(v)?v-tot(b):NaN,c=(s.id===side.R?'isR ':'')+(s.id===side.L?'isL':'');
+    let bar='',val='';
+    if(isBase(s.id)){bar=`<div class="num" style="font-size:11px;color:var(--muted);text-align:right">${isFinite(v)?M1(v):'—'}</div>`;val='<span class="val base">baseline</span>';}
+    else{const w=isFinite(d)?Math.max(2,Math.abs(d)/mx*50):0,cl=d>0?'var(--worse)':'var(--better)';
+      bar=`<div class="dbar" title="${isFinite(v)?M1(v):''}"><i style="${d>=0?'left:50%':'right:50%'};width:${w}%;background:${cl}"></i></div>`;
+      val=`<span class="val ${d>0?'up':d<0?'dn':''}">${isFinite(d)?sgn(d):'—'}</span>`;}
+    return `<div class="srow ${c}" data-id="${s.id}" role="button" tabindex="0"><div class="nm">${s.label}<small>${s.id}</small></div>${bar}${val}</div>`;}).join('')+'</div>').join('');}
+$('#allt').addEventListener('click',e=>{const r=e.target.closest('.srow');if(!r)return;side[e.shiftKey?'L':'R']=r.dataset.id;render();});
+$('#allt').addEventListener('keydown',e=>{if(e.key!=='Enter')return;const r=e.target.closest('.srow');if(r){side[e.shiftKey?'L':'R']=r.dataset.id;render();}});
+const scL=$('#scL'),scR=$('#scR');
 [scL,scR].forEach((s,j)=>{const groups={};SCS.forEach(x=>{(groups[x.group]=groups[x.group]||[]).push(x);});
-  Object.entries(groups).forEach(([g,list])=>{const og=document.createElement('optgroup');og.label=g;list.forEach(x=>{const o=document.createElement('option');o.value=x.id;o.textContent=x.label;o.title=x.id;og.appendChild(o);});s.appendChild(og);});
+  Object.entries(groups).forEach(([g,list])=>{const og=document.createElement('optgroup');og.label=g.replace(/^flood_/,'Event ');list.forEach(x=>{const o=document.createElement('option');o.value=x.id;o.textContent=x.label+(isBase(x.id)?'  · baseline':'');o.title=x.id;og.appendChild(o);});s.appendChild(og);});
   s.addEventListener('change',()=>{side[j?'R':'L']=s.value;render();});});
-document.getElementById('swipe').addEventListener('change',e=>{swipeOn=e.target.checked;render();});
+$('#swapBtn').addEventListener('click',()=>{[side.L,side.R]=[side.R,side.L];render();});
+$('#swipe').addEventListener('change',e=>{swipeOn=e.target.checked;render();});
 document.querySelectorAll('input[name=lay]').forEach(r=>r.addEventListener('change',e=>{layer=e.target.value;render();}));
-document.querySelectorAll('input[name=agg]').forEach(r=>r.addEventListener('change',e=>{aggKey=+e.target.value;layer='agg';document.querySelector('input[name=lay][value=agg]').checked=true;render();}));
-const bG=document.getElementById('stGui'),bH=document.getElementById('stHeat');
-[bG,bH].forEach(b=>b.addEventListener('click',()=>{style=b===bG?'gui':'heat';bG.setAttribute('aria-pressed',style==='gui');bH.setAttribute('aria-pressed',style==='heat');layer='depth';document.querySelector('input[name=lay][value=depth]').checked=true;render();}));
-document.getElementById('ovDiff').addEventListener('change',()=>render());
-document.getElementById('ovMeas').addEventListener('change',e=>{e.target.checked?measLayer.addTo(map):measLayer.remove();});
-document.getElementById('op').addEventListener('input',e=>{opacity=e.target.value/100;['L','R'].forEach(s=>{tiles[s].setOpacity(opacity);if(heat[s]._canvas)heat[s]._canvas.style.opacity=opacity;if(agg[s])agg[s].setStyle({fillOpacity:opacity});});});
-document.getElementById('bm').addEventListener('change',e=>{curBase&&curBase.remove();curBase=base[e.target.value]||null;curBase&&curBase.addTo(map);});
-document.getElementById('goMeas').addEventListener('click',()=>{const b=L.featureGroup(measLayer.getLayers()).getBounds();if(b.isValid())map.flyToBounds(b.pad(2),{duration:1.2});});
-document.getElementById('goAll').addEventListener('click',()=>map.flyToBounds(BOUNDS,{duration:1.2}));
-const knob=document.getElementById('knob');let drag=false;
-knob.addEventListener('pointerdown',e=>{drag=true;knob.setPointerCapture(e.pointerId);map.dragging.disable();e.preventDefault();});
+sub.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;aggKey=+b.dataset.agg;sub.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b));render();});
+const bG=$('#stGui'),bH=$('#stHeat');
+[bG,bH].forEach(b=>b.addEventListener('click',()=>{style=b===bG?'gui':'heat';bG.setAttribute('aria-pressed',style==='gui');bH.setAttribute('aria-pressed',style==='heat');render();}));
+$('#ovDiff').addEventListener('change',()=>render());
+$('#ovMeas').addEventListener('change',e=>{e.target.checked?measLayer.addTo(map):measLayer.remove();});
+$('#op').addEventListener('input',e=>{opacity=e.target.value/100;$('#opv').textContent=e.target.value+'%';['L','R'].forEach(s=>{tiles[s].setOpacity(opacity);if(heat[s]._canvas)heat[s]._canvas.style.opacity=opacity;if(agg[s])agg[s].setStyle({fillOpacity:opacity});});});
+$('#bm').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;bmChosen=true;setBase(b.dataset.bm);});
+$('#theme').addEventListener('click',()=>{theme=theme==='dark'?'light':'dark';document.documentElement.dataset.theme=theme;try{localStorage.setItem('fa-theme',theme);}catch(e){}
+  if(!bmChosen||bmKey==='streets'||bmKey==='dark'||bmKey==='light')setBase(theme==='dark'?'dark':'streets');if(layer==='agg')render();});
+const pad={paddingTopLeft:[360,80],paddingBottomRight:[380,70]};
+$('#goMeas').addEventListener('click',()=>{const b=L.featureGroup(measLayer.getLayers()).getBounds();if(b.isValid())map.flyToBounds(b.pad(1.5),{duration:1.1,...(document.body.classList.contains('present')?{}:pad)});});
+$('#goAll').addEventListener('click',()=>map.flyToBounds(BOUNDS,{duration:1.1,...(document.body.classList.contains('present')?{}:pad)}));
+const togglePresent=()=>{document.body.classList.toggle('present');$('#present').setAttribute('aria-pressed',document.body.classList.contains('present'));};
+$('#present').addEventListener('click',togglePresent);
+const knob=$('#knob');let drag=false;
+knob.addEventListener('pointerdown',e=>{drag=true;knob.classList.add('drag');knob.setPointerCapture(e.pointerId);map.dragging.disable();e.preventDefault();});
 knob.addEventListener('pointermove',e=>{if(!drag)return;const r=map.getContainer().getBoundingClientRect();frac=Math.min(1,Math.max(0,(e.clientX-r.left)/r.width));clip();});
-['pointerup','pointercancel'].forEach(t=>knob.addEventListener(t,()=>{drag=false;map.dragging.enable();}));
-document.addEventListener('keydown',e=>{if(/INPUT|SELECT/.test(e.target.tagName))return;if(e.key==='ArrowLeft'||e.key==='ArrowRight'){frac=Math.min(1,Math.max(0,frac+(e.key==='ArrowLeft'?-1:1)*(e.shiftKey?.1:.02)));clip();e.preventDefault();}});
+['pointerup','pointercancel'].forEach(t=>knob.addEventListener(t,()=>{drag=false;knob.classList.remove('drag');map.dragging.enable();}));
+document.addEventListener('keydown',e=>{if(/INPUT|SELECT/.test(e.target.tagName))return;
+  if(e.key==='ArrowLeft'||e.key==='ArrowRight'){frac=Math.min(1,Math.max(0,frac+(e.key==='ArrowLeft'?-1:1)*(e.shiftKey?.1:.02)));clip();e.preventDefault();}
+  if(e.key==='p'||e.key==='P')togglePresent();});
 render();
 </script>
 </body>
